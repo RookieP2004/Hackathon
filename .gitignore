@@ -1,0 +1,51 @@
+# --- Node / pnpm / Turborepo ---
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+.pnpm-store/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.venv*/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+poetry.lock.bak
+
+# --- Env & secrets ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- Docker / infra ---
+infra/docker-compose/db-init/*.generated.sql
+infra/docker-compose/.volumes/
+
+# --- Editors / OS ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Test / coverage ---
+coverage/
+.coverage
+htmlcov/
+
+# --- Terraform ---
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
