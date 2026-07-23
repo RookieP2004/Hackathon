@@ -1,7 +1,0 @@
-# Workspace configuration for the JS/TS half of the monorepo (ARCHITECTURE.md §23.2).
-# Python services under services/ are NOT part of this workspace — see README.md
-# "Why Two Package Ecosystems" for the reasoning.
-packages:
-  - "apps/web"
-  - "libs/design-system"
-  - "libs/schemas"
