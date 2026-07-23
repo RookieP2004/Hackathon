@@ -200,7 +200,10 @@
       "Bash(rm -rf node_modules apps/web/node_modules libs/design-system/node_modules)",
       "Bash(pnpm store *)",
       "Bash(curl -s -o /dev/null -w \"login: %{http_code}\\\\n\" http://localhost:3000/login --max-time 10)",
-      "Bash(curl -s -o /dev/null -w \"dashboard: %{http_code}\\\\n\" http://localhost:3000/dashboard --max-time 15)"
+      "Bash(curl -s -o /dev/null -w \"dashboard: %{http_code}\\\\n\" http://localhost:3000/dashboard --max-time 15)",
+      "Bash(pnpm dev *)",
+      "Bash(curl -s -o /dev/null -w \"login: %{http_code}\\\\n\" http://localhost:3000/login --max-time 15)",
+      "Bash(curl -s -o /dev/null -w \"dashboard: %{http_code}\\\\n\" http://localhost:3000/dashboard --max-time 10)"
     ]
   }
 }

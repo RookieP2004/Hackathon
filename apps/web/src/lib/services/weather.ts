@@ -1,7 +1,7 @@
 import { fetchWithAuth } from '@/lib/api-client';
 import type { Page } from './types';
 
-const BASE_URL = process.env.NEXT_PUBLIC_INGESTION_GATEWAY_URL ?? 'http://localhost:8002';
+const BASE_URL = process.env.NEXT_PUBLIC_INGESTION_GATEWAY_URL ?? 'http://127.0.0.1:8002';
 
 export interface WeatherObservation {
   id: number;

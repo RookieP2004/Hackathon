@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { TelemetrySnapshot } from '@/lib/services/simulator';
 
-const WS_URL = process.env.NEXT_PUBLIC_IOT_SIMULATOR_WS_URL ?? 'ws://localhost:8014/ws/telemetry';
+const WS_URL = process.env.NEXT_PUBLIC_IOT_SIMULATOR_WS_URL ?? 'ws://127.0.0.1:8014/ws/telemetry';
 const STALE_AFTER_MS = 3_500; // ~3.5 ticks with no message before we consider the feed stale
 const RECONNECT_DELAY_MS = 1_500;
 const HISTORY_LENGTH = 120; // ~2 minutes of ticks, enough for the Risk Timeline sparklines

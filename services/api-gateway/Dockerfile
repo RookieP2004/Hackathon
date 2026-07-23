@@ -1,4 +1,4 @@
-# Canonical service Dockerfile — every service under services/ copies this pattern
+# Canonical service Dockerfile  Eevery service under services/ copies this pattern
 # (scripts/new-service.sh substitutes only the service name and its extra dependencies).
 #
 # Build context is the REPO ROOT, not this directory (see
@@ -26,5 +26,5 @@ RUN poetry install --no-root --only main
 COPY services/api-gateway/ .
 
 EXPOSE 8000
-HEALTHCHECK --interval=10s --timeout=3s --retries=3 CMD curl -f http://localhost:8000/health || exit 1
+HEALTHCHECK --interval=10s --timeout=3s --retries=3 CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status == 200 else 1)"
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

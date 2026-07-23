@@ -1,7 +1,7 @@
 import { fetchWithAuth } from '@/lib/api-client';
 import type { Page } from './types';
 
-const BASE_URL = process.env.NEXT_PUBLIC_INCIDENT_SERVICE_URL ?? 'http://localhost:8010';
+const BASE_URL = process.env.NEXT_PUBLIC_INCIDENT_SERVICE_URL ?? 'http://127.0.0.1:8010';
 
 export interface Incident {
   id: number;

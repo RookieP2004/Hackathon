@@ -27,11 +27,11 @@ ultralytics = "^8.3.0"  # real YOLOv8 — the "Use YOLO" requirement
 websockets = "^13.1"  # client for iot-simulator's live telemetry feed
 python-jose = { extras = ["cryptography"], version = "^3.3.0" }  # mints the shared-secret JWT this service uses to call notification-service/predictive-risk-engine
 python-multipart = "^0.0.12"  # required by FastAPI for the /vision/detect image-upload endpoint
+httpx = "^0.27.2"  # used by app.vision.downstream to call notification-service/predictive-risk-engine
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 pytest-asyncio = "^0.24.0"
-httpx = "^0.27.2"
 ruff = "^0.7.1"
 mypy = "^1.13.0"
 

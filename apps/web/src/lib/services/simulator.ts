@@ -2,7 +2,7 @@
 
 import { fetchWithAuth } from '@/lib/api-client';
 
-const BASE_URL = process.env.NEXT_PUBLIC_IOT_SIMULATOR_URL ?? 'http://localhost:8014';
+const BASE_URL = process.env.NEXT_PUBLIC_IOT_SIMULATOR_URL ?? 'http://127.0.0.1:8014';
 
 export type Severity = 'normal' | 'warning' | 'critical';
 export type ScenarioType = 'gas_leak' | 'explosion' | 'machine_failure' | 'worker_collapse' | 'fire';

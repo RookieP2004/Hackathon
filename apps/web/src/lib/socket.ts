@@ -10,7 +10,7 @@ let socket: Socket | null = null;
 
 export function getRealtimeSocket(): Socket {
   if (!socket) {
-    socket = io(process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8001', {
+    socket = io(process.env.NEXT_PUBLIC_WS_URL ?? 'ws://127.0.0.1:8001', {
       autoConnect: false,
       transports: ['websocket'],
     });

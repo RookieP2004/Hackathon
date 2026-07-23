@@ -7,6 +7,34 @@ name: aegis-ai
 x-service-base: &service-base
   env_file:
     - ../../.env
+  environment:
+    # .env's DATABASE_URL/NEO4J_URI/REDIS_URL/etc. point at localhost, which is correct
+    # for the make web / host-side dev path (README's Quickstart) but not for containers
+    # on the aegis-net bridge network -- override with the compose service names here.
+    POSTGRES_HOST: postgres
+    DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-aegis}:${POSTGRES_PASSWORD:-changeme_local_only}@postgres:5432/${POSTGRES_DB:-aegis}
+    NEO4J_HOST: neo4j
+    NEO4J_URI: bolt://neo4j:7687
+    REDIS_HOST: redis
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+    CELERY_RESULT_BACKEND: redis://redis:6379/2
+    KAFKA_BROKERS: redpanda:9092
+    KAFKA_SCHEMA_REGISTRY_URL: http://redpanda:8081
+    MQTT_BROKER_HOST: mosquitto
+    # Same problem, same fix, for service-to-service calls: each service's config.py
+    # defaults these to localhost:<host-port> (correct for host-side dev), but inside
+    # a container "localhost" means that container itself -- point them at the other
+    # containers' compose service names on their internal port (every service listens
+    # on 8000 internally regardless of its host-mapped port).
+    IOT_SIMULATOR_WS_URL: ws://iot-simulator:8000/ws/telemetry
+    IOT_SIMULATOR_URL: http://iot-simulator:8000
+    NOTIFICATION_SERVICE_URL: http://notification-service:8000
+    PREDICTIVE_RISK_ENGINE_URL: http://predictive-risk-engine:8000
+    KNOWLEDGE_GRAPH_URL: http://knowledge-graph:8000
+    COMPUTER_VISION_URL: http://computer-vision:8000
+    RAG_SERVICE_URL: http://rag-service:8000
+    INCIDENT_SERVICE_URL: http://incident-service:8000
   depends_on:
     postgres:
       condition: service_healthy

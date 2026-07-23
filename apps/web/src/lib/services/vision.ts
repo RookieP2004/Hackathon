@@ -1,6 +1,6 @@
 import { fetchWithAuth } from '@/lib/api-client';
 
-const BASE_URL = process.env.NEXT_PUBLIC_COMPUTER_VISION_URL ?? 'http://localhost:8004';
+const BASE_URL = process.env.NEXT_PUBLIC_COMPUTER_VISION_URL ?? 'http://127.0.0.1:8004';
 
 export type DetectionClass =
   | 'helmet'

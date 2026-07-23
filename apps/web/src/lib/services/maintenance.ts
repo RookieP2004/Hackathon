@@ -1,7 +1,7 @@
 import { fetchWithAuth } from '@/lib/api-client';
 import type { Page } from './types';
 
-const BASE_URL = process.env.NEXT_PUBLIC_PREDICTIVE_RISK_ENGINE_URL ?? 'http://localhost:8005';
+const BASE_URL = process.env.NEXT_PUBLIC_PREDICTIVE_RISK_ENGINE_URL ?? 'http://127.0.0.1:8005';
 
 export interface MaintenanceRecord {
   id: number;
