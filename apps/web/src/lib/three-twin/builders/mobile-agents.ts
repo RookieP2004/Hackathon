@@ -5,14 +5,7 @@ import { createTextSprite, updateTextSprite } from '@/lib/three-twin/text-sprite
 import { SEVERITY_HEX } from '@/lib/three-twin/severity-colors';
 import { fromSimulatorSeverity } from '@/components/dashboard/severity';
 import { offsetFromAnchor, type AnchorRegistry } from '@/lib/mobile-position';
-import type {
-  EmergencyResponderSnapshot,
-  RobotSnapshot,
-  TelemetrySnapshot,
-  VehicleSnapshot,
-  WorkerSnapshot,
-  WorldTopology,
-} from '@/lib/services/simulator';
+import type { EmergencyResponderSnapshot, TelemetrySnapshot, WorldTopology } from '@/lib/services/simulator';
 
 function humanoidMesh(color: string): { group: THREE.Group; body: THREE.MeshStandardMaterial } {
   const group = new THREE.Group();

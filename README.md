@@ -72,16 +72,35 @@ aegis-ai/
 
 The frontend and `libs/design-system`/`libs/schemas` are a **pnpm + Turborepo workspace** (see `pnpm-workspace.yaml`, `turbo.json`). Every Python service under `services/` is **independently Poetry-packaged** with its own `pyproject.toml`/`poetry.lock` — there is no unified Python workspace tool imposing shared dependency versions across services. This is a deliberate choice, not a gap: `ARCHITECTURE.md` §8.3/`NFR-14` require services to be independently deployable and independently versionable, and a forced shared Python dependency tree is the single most common way monorepos quietly violate that requirement. The root `Makefile` bridges both ecosystems with one consistent command surface.
 
+## Prerequisites
+
+| Tool | Required | Notes |
+|---|---|---|
+| Node.js | **20.x or 22.x LTS** (pinned: `.nvmrc` → 22.14.0) | Next.js 15 + this repo's tooling need >=20; verified working on 22 LTS. If you use `nvm`/`nvm-windows`: `nvm install` then `nvm use` picks up `.nvmrc` automatically. |
+| pnpm | >=9.0.0 | `corepack enable` (bundled with Node 20+) will install the pinned version from `packageManager` in `package.json` automatically. |
+| Docker Desktop | Any recent version | Backs `make up` (Postgres/Neo4j/Redis/Redpanda/Mosquitto + all backend services). |
+| Python | 3.12 | Only needed if running a backend service outside Docker. |
+
+**Windows only — Defender exclusion (recommended):** Windows Defender's real-time scanning of `node_modules`/`.next` is a well-documented source of intermittent `EPERM: operation not permitted` errors during `next build`/`next dev` on Windows (the scanner briefly locks a file Next.js is trying to write). From an **elevated** PowerShell, once, per machine:
+```powershell
+Add-MpPreference -ExclusionPath "C:\path\to\this\repo"
+```
+Run `pnpm doctor` (see below) any time the frontend won't start — it checks Node/pnpm versions, required env vars, and flags exactly this class of issue.
+
 ## Quickstart
 
 ```bash
 cp .env.example .env                    # fill in secrets (LLM API keys, JWT secret)
+nvm use                                  # picks up the pinned Node version from .nvmrc
+corepack enable                          # ensures the pinned pnpm version (see package.json) is used
+pnpm install                             # installs the JS/TS workspace (apps/web + libs/design-system + libs/schemas)
+pnpm doctor                              # verifies Node/pnpm versions, env vars, ports, and dependency state
 make up                                  # starts every infra dependency + service via Docker Compose
 make web                                 # runs the Next.js frontend in dev mode (outside Docker, for fast HMR)
 make test                                # runs the full test suite across both ecosystems
 ```
 
-See `Makefile` for the full command surface.
+See `Makefile` for the full backend/cross-cutting command surface, or `apps/web/package.json` / the root `package.json` for the frontend-specific scripts (`dev`, `build`, `lint`, `type-check`, `clean`, `reset`, `doctor`).
 
 ## What's Actually Implemented
 

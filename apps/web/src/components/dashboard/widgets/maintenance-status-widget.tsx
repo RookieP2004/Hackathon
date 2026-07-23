@@ -15,7 +15,7 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 export function MaintenanceStatusWidget() {
-  const { data, isLoading, isError, error } = useMaintenanceRecords();
+  const { data, isLoading, isError, error, refetch } = useMaintenanceRecords();
   const records = data?.items ?? [];
   const pendingCount = records.filter((r) => r.status === 'scheduled' || r.status === 'in_progress').length;
 
@@ -27,7 +27,7 @@ export function MaintenanceStatusWidget() {
       headerRight={<span className="text-xs text-muted-foreground">{pendingCount} pending</span>}
     >
       {isLoading && <ListSkeleton />}
-      {isError && <ErrorState message={(error as Error).message} />}
+      {isError && <ErrorState message={(error as Error).message} onRetry={() => refetch()} />}
       {!isLoading && !isError && records.length === 0 && <AllClearState label="No work orders on file" />}
       <ul className="space-y-2">
         {records.map((r) => (

@@ -9,7 +9,7 @@ import { fromDomainSeverity } from '../severity';
 import { useAlerts } from '@/hooks/use-dashboard-data';
 
 export function LiveAlertsWidget() {
-  const { data, isLoading, isError, error } = useAlerts();
+  const { data, isLoading, isError, error, refetch } = useAlerts();
   const alerts = data?.items ?? [];
   const openCount = alerts.filter((a) => a.status === 'open').length;
   const worstSeverity = alerts.some((a) => a.status !== 'resolved' && a.severity === 'critical') ? 'critical' : undefined;
@@ -23,7 +23,7 @@ export function LiveAlertsWidget() {
       headerRight={<span className="text-xs text-muted-foreground">{openCount} open</span>}
     >
       {isLoading && <ListSkeleton />}
-      {isError && <ErrorState message={(error as Error).message} />}
+      {isError && <ErrorState message={(error as Error).message} onRetry={() => refetch()} />}
       {!isLoading && !isError && alerts.length === 0 && <AllClearState label="No alerts raised" />}
       <ul className="space-y-2" aria-live="polite" aria-relevant="additions">
         {alerts.map((a) => (

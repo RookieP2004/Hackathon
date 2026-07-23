@@ -8,8 +8,4 @@ export interface Page<T> {
   total_pages: number;
 }
 
-export interface ApiErrorBody {
-  error: { code: string; message: string; detail?: unknown };
-}
-
 export type Severity = 'normal' | 'warning' | 'critical';

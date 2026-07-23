@@ -6,12 +6,12 @@ import { ErrorState, ListSkeleton } from '../list-states';
 import { useLatestWeather } from '@/hooks/use-dashboard-data';
 
 export function WeatherWidget() {
-  const { data: weather, isLoading, isError, error } = useLatestWeather();
+  const { data: weather, isLoading, isError, error, refetch } = useLatestWeather();
 
   return (
     <WidgetCard title="Weather" icon={CloudSun} accent="indigo">
       {isLoading && <ListSkeleton rows={2} />}
-      {isError && <ErrorState message={(error as Error).message} />}
+      {isError && <ErrorState message={(error as Error).message} onRetry={() => refetch()} />}
       {!isLoading && !isError && weather && (
         <div>
           <div className="flex items-baseline gap-2">

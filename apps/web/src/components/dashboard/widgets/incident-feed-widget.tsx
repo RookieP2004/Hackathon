@@ -9,7 +9,7 @@ import { fromDomainSeverity } from '../severity';
 import { useIncidents } from '@/hooks/use-dashboard-data';
 
 export function IncidentFeedWidget() {
-  const { data, isLoading, isError, error } = useIncidents();
+  const { data, isLoading, isError, error, refetch } = useIncidents();
   const incidents = data?.items ?? [];
   const openCount = incidents.filter((i) => i.status !== 'closed').length;
 
@@ -21,7 +21,7 @@ export function IncidentFeedWidget() {
       headerRight={<span className="text-xs text-muted-foreground">{openCount} open</span>}
     >
       {isLoading && <ListSkeleton />}
-      {isError && <ErrorState message={(error as Error).message} />}
+      {isError && <ErrorState message={(error as Error).message} onRetry={() => refetch()} />}
       {!isLoading && !isError && incidents.length === 0 && <AllClearState label="No incidents recorded" />}
       <ul className="space-y-2" aria-live="polite" aria-relevant="additions">
         {incidents.map((inc) => (

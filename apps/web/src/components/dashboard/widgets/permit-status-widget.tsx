@@ -16,7 +16,7 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 export function PermitStatusWidget() {
-  const { data, isLoading, isError, error } = usePermits();
+  const { data, isLoading, isError, error, refetch } = usePermits();
   const permits = data?.items ?? [];
   const activeCount = permits.filter((p) => p.status === 'active').length;
 
@@ -28,7 +28,7 @@ export function PermitStatusWidget() {
       headerRight={<span className="text-xs text-muted-foreground">{activeCount} active</span>}
     >
       {isLoading && <ListSkeleton />}
-      {isError && <ErrorState message={(error as Error).message} />}
+      {isError && <ErrorState message={(error as Error).message} onRetry={() => refetch()} />}
       {!isLoading && !isError && permits.length === 0 && <AllClearState label="No permits on file" />}
       <ul className="space-y-2">
         {permits.map((p) => (

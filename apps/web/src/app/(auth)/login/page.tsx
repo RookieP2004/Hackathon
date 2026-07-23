@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AuthCard } from '@/components/auth/AuthCard';
@@ -14,8 +14,22 @@ import { cn } from '@/lib/utils';
  * UI_UX_SPECIFICATION.md §1: in-button spinner on submit (never a full-page
  * spinner replacing the card), inline shake+error on invalid credentials
  * (never a page-level banner), no severity-palette color anywhere on this screen.
+ *
+ * `useSearchParams()` (below, for the post-login `?next=` redirect target)
+ * requires a Suspense boundary in the App Router -- its value isn't known at
+ * static-build time, so Next.js needs a fallback for the render pass before
+ * the real URL is available. The fallback below mirrors the real card's
+ * shape so there's no layout shift, not a generic spinner.
  */
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<AuthCard title="Sign in" subtitle="Control room, safety, and administrative access">{null}</AuthCard>}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
