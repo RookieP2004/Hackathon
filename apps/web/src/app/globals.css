@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens per UI_UX_SPECIFICATION.md §0.2 — real values (M112), derived
+ * directly from the spec's hex palette: bg.void #0A0C0F, bg.surface #12151A,
+ * bg.surface-raised #1A1E24, border.subtle #252A31, text.primary #F2F4F7,
+ * text.secondary #9AA4B2, text.tertiary #5B6472, severity critical/high/
+ * medium/low/nominal #E5484D/#F5A524/#E8C547/#6E8FAE/#2CC295, aegis-cyan
+ * #3CD8E8 (AI-generated content only), aegis-indigo #4F5FE8 (chrome/nav only).
+ * Dark mode is canonical/default per §0.2 — no light-mode override exists yet.
+ */
+@layer base {
+  :root {
+    --background: 216 20% 5%;
+    --foreground: 216 24% 96%;
+    --border: 215 14% 17%;
+    --input: 215 14% 17%;
+    --ring: 234 77% 61%;
+
+    --card: 218 18% 9%;
+    --card-foreground: 216 24% 96%;
+    --card-raised: 216 16% 12%;
+
+    --muted: 215 14% 17%;
+    --muted-foreground: 215 13% 65%;
+    /* 50% (not 40%) is load-bearing: against --background (216 20% 5%) this
+       clears WCAG AA's 4.5:1 text-contrast minimum (~4.66:1); 40% measured
+       ~3.2:1, failing AA for the normal-size text this token is used for
+       (timestamps, subtitles, secondary labels). */
+    --muted-foreground-subtle: 217 11% 50%;
+
+    --primary: 234 77% 61%;
+    --primary-foreground: 216 24% 98%;
+
+    --destructive: 358 75% 59%;
+    --destructive-foreground: 216 24% 98%;
+
+    --severity-critical: 358 75% 59%;
+    --severity-high: 37 91% 55%;
+    --severity-medium: 47 78% 59%;
+    --severity-low: 209 28% 56%;
+    --severity-nominal: 162 63% 47%;
+
+    --aegis-cyan: 186 79% 57%;
+    --aegis-indigo: 234 77% 61%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* UI_UX_SPECIFICATION.md §1: "the password field shakes very subtly (one
+     80ms horizontal oscillation, respecting reduced-motion)" on invalid
+     credentials -- never a page-level banner for something this routine. */
+  @keyframes shake-subtle {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+  .animate-shake {
+    animation: shake-subtle 80ms ease-in-out 2;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-shake {
+      animation: none;
+    }
+  }
+
+  /* Factory map pipeline edges — animated flowing dashes (see PipelineEdge). */
+  @keyframes pipeline-flow {
+    to {
+      stroke-dashoffset: -20;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [style*='pipeline-flow'] {
+      animation: none !important;
+    }
+  }
+
+  /* Factory map: workers/vehicles are re-positioned every tick from live GPS
+     (see factory-map-builder.ts) — this is what turns those position jumps
+     into smooth motion instead of a teleport every second. */
+  .react-flow__node {
+    transition: transform 900ms linear;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .react-flow__node {
+      transition: none;
+    }
+  }
+}

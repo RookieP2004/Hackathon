@@ -1,0 +1,204 @@
+name: aegis-ai
+
+# Local development environment — ARCHITECTURE.md §25.4. One command (`make up`)
+# brings up every infra dependency and all 14 backend services. The frontend runs
+# outside Docker via `make web` for fast HMR (ARCHITECTURE.md §7.1's dev-experience note).
+
+x-service-base: &service-base
+  env_file:
+    - ../../.env
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - aegis-net
+  restart: unless-stopped
+
+services:
+  # ---------------------------------------------------------------------------
+  # Infrastructure — DATABASE_SCHEMA.md, KNOWLEDGE_GRAPH.md, ARCHITECTURE.md §10
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: timescale/timescaledb:2.17.2-pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aegis}
+      POSTGRES_USER: ${POSTGRES_USER:-aegis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_local_only}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aegis}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [aegis-net]
+
+  neo4j:
+    image: neo4j:5.24-community
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-changeme_local_only}
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "127.0.0.1:${NEO4J_HTTP_PORT:-7474}:7474"
+      - "127.0.0.1:${NEO4J_BOLT_PORT:-7687}:7687"
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [aegis-net]
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-changeme_local_only}"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme_local_only}", "--no-auth-warning", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [aegis-net]
+
+  redpanda:
+    image: redpandadata/redpanda:v24.2.10
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:9092
+      - --schema-registry-addr 0.0.0.0:8081
+    ports:
+      - "9092:9092"
+      - "8081:8081"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    networks: [aegis-net]
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    ports:
+      - "${MQTT_BROKER_PORT:-1883}:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks: [aegis-net]
+
+  # ---------------------------------------------------------------------------
+  # Edge / Ingestion — ARCHITECTURE.md §6.2, §17
+  # ---------------------------------------------------------------------------
+  ingestion-gateway:
+    <<: *service-base
+    build: { context: ../../services/ingestion-gateway }
+    ports: ["${INGESTION_GATEWAY_PORT:-8002}:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      redpanda: { condition: service_started }
+      mosquitto: { condition: service_started }
+
+  # ---------------------------------------------------------------------------
+  # Intelligence Layer — ARCHITECTURE.md §9, §13-16
+  # ---------------------------------------------------------------------------
+  anomaly-detection:
+    <<: *service-base
+    build: { context: ../../services/anomaly-detection }
+    ports: ["${ANOMALY_DETECTION_PORT:-8003}:8000"]
+
+  computer-vision:
+    <<: *service-base
+    build: { context: ../../services/computer-vision }
+    ports: ["${COMPUTER_VISION_PORT:-8004}:8000"]
+
+  predictive-risk-engine:
+    <<: *service-base
+    build: { context: ../../services/predictive-risk-engine }
+    ports: ["${PREDICTIVE_RISK_ENGINE_PORT:-8005}:8000"]
+
+  digital-twin:
+    <<: *service-base
+    build: { context: ../../services/digital-twin }
+    ports: ["${DIGITAL_TWIN_PORT:-8006}:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      neo4j: { condition: service_healthy }
+
+  iot-simulator:
+    <<: *service-base
+    build: { context: ../../services/iot-simulator }
+    ports: ["${IOT_SIMULATOR_PORT:-8014}:8000"]
+
+  knowledge-graph:
+    <<: *service-base
+    build: { context: ../../services/knowledge-graph }
+    ports: ["${KNOWLEDGE_GRAPH_PORT:-8007}:8000"]
+    depends_on:
+      neo4j: { condition: service_healthy }
+
+  rag-service:
+    <<: *service-base
+    build: { context: ../../services/rag-service }
+    ports: ["${RAG_SERVICE_PORT:-8008}:8000"]
+
+  agentic-orchestrator:
+    <<: *service-base
+    build: { context: ../../services/agentic-orchestrator }
+    ports: ["${AGENTIC_ORCHESTRATOR_PORT:-8009}:8000"]
+
+  # ---------------------------------------------------------------------------
+  # Application / Domain Services — ARCHITECTURE.md §8.1
+  # ---------------------------------------------------------------------------
+  incident-service:
+    <<: *service-base
+    build: { context: ../../services/incident-service }
+    ports: ["${INCIDENT_SERVICE_PORT:-8010}:8000"]
+
+  notification-service:
+    <<: *service-base
+    build: { context: ../../services/notification-service }
+    ports: ["${NOTIFICATION_SERVICE_PORT:-8011}:8000"]
+
+  identity-rbac:
+    <<: *service-base
+    build: { context: ../../services/identity-rbac }
+    ports: ["${IDENTITY_RBAC_PORT:-8012}:8000"]
+
+  audit-log:
+    <<: *service-base
+    build: { context: ../../services/audit-log }
+    ports: ["${AUDIT_LOG_PORT:-8013}:8000"]
+
+  # ---------------------------------------------------------------------------
+  # Experience Layer — ARCHITECTURE.md §11
+  # ---------------------------------------------------------------------------
+  api-gateway:
+    <<: *service-base
+    build: { context: ../../services/api-gateway }
+    ports: ["${API_GATEWAY_PORT:-8000}:8000"]
+    depends_on:
+      identity-rbac: { condition: service_started }
+
+  realtime-gateway:
+    <<: *service-base
+    build: { context: ../../services/realtime-gateway }
+    ports: ["${REALTIME_GATEWAY_PORT:-8001}:8000"]
+
+networks:
+  aegis-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  neo4j-data:
+  redis-data:
+  redpanda-data:

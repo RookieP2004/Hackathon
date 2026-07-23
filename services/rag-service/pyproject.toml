@@ -1,0 +1,57 @@
+[tool.poetry]
+name = "rag-service"
+version = "0.1.0"
+description = "Embedding, retrieval, and grounded generation, Knowledge Agent, per RAG_SYSTEM.md and AGENT_ARCHITECTURE.md section 6"
+authors = ["AEGIS AI Engineering"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.4"
+uvicorn = { extras = ["standard"], version = "^0.32.0" }
+pydantic = { extras = ["email"], version = "^2.9.2" }
+pydantic-settings = "^2.6.0"
+sqlalchemy = { extras = ["asyncio"], version = "^2.0.36" }
+asyncpg = "^0.30.0"
+redis = "^5.2.0"
+structlog = "^24.4.0"
+httpx = "^0.27.2"
+
+# Shared models/migrations + cross-cutting API concerns — see libs/db/README.md
+# and libs/api-common/pyproject.toml. No per-service alembic dependency: libs/db
+# owns the single consolidated migration chain for the entire schema.
+aegis-db = { path = "../../libs/db", develop = true }
+aegis-api-common = { path = "../../libs/api-common", develop = true }
+
+# RAG_SYSTEM.md — hybrid retrieval (BM25 + embeddings + graph-scoped), cross-encoder
+# re-ranking, NLI-based entailment verification, and OCR -- all real, local models.
+# No langchain/langgraph/pgvector: no LLM API key is configured in this environment
+# (generation itself is the future AI Copilot's job, not this service's -- see
+# app/rag/pipeline.py's docstring), and the chunk/embedding index is a small,
+# rebuildable in-memory store (app/rag/store.py's docstring) rather than a
+# dedicated vector database, so pgvector has nothing to back.
+sentence-transformers = "^3.2.1"
+rank-bm25 = "^0.2.2"
+easyocr = "^1.7.2"
+pillow = "^11.0.0"
+numpy = "^2.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-asyncio = "^0.24.0"
+ruff = "^0.7.1"
+mypy = "^1.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

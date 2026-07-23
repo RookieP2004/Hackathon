@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# ARCHITECTURE.md §25.1's pipeline skeleton: lint + build on every PR. Schema-contract
+# validation (§25.1's other CI gate) is added once libs/schemas has real schemas to
+# validate (DEVELOPMENT_ROADMAP.md M56). Integration/E2E stages are added per-phase
+# as the roadmap's milestones produce real, testable behavior.
+
+jobs:
+  frontend:
+    name: Frontend — lint, type-check, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run type-check
+      - run: pnpm run build
+
+  backend:
+    name: Backend — lint + test (per service)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - ingestion-gateway
+          - anomaly-detection
+          - computer-vision
+          - predictive-risk-engine
+          - digital-twin
+          - knowledge-graph
+          - rag-service
+          - agentic-orchestrator
+          - incident-service
+          - notification-service
+          - identity-rbac
+          - audit-log
+          - api-gateway
+          - realtime-gateway
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pipx install poetry==1.8.4
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: poetry install
+
+      - name: Lint (ruff)
+        working-directory: services/${{ matrix.service }}
+        run: poetry run ruff check .
+
+      - name: Test
+        working-directory: services/${{ matrix.service }}
+        run: poetry run pytest

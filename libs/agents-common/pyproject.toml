@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "aegis-agents-common"
+version = "0.1.0"
+description = "Shared multi-agent framework — the Agent Bus (Redis pub/sub), the standard message envelope, memory/decision-log persistence, and BaseAgent — implementing AGENT_ARCHITECTURE.md §0's meta-architecture once for all twelve fleet agents."
+authors = ["AEGIS AI Engineering"]
+packages = [{ include = "aegis_agents" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+redis = "^5.2.0"
+asyncpg = "^0.30.0"
+structlog = "^24.4.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-asyncio = "^0.24.0"
+ruff = "^0.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "iot-simulator"
+version = "0.1.0"
+description = "Physics-informed industrial IoT sensor/scenario simulator, streamed live over WebSockets"
+authors = ["AEGIS AI Engineering"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.4"
+uvicorn = { extras = ["standard"], version = "^0.32.0" }
+pydantic = "^2.9.2"
+pydantic-settings = "^2.6.0"
+structlog = "^24.4.0"
+sqlalchemy = { extras = ["asyncio"], version = "^2.0.36" }
+asyncpg = "^0.30.0"
+
+# Shared cross-cutting API concerns (error envelope, structured request
+# logging, JWT auth/RBAC) — see libs/api-common/pyproject.toml. This
+# service's own simulated world remains fully in-memory; the only real
+# Postgres connection this service opens is app/db.py's role-lookup query
+# backing app/auth.py's authentication on /control/* and /world.
+aegis-db = { path = "../../libs/db", develop = true }
+aegis-api-common = { path = "../../libs/api-common", develop = true }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-asyncio = "^0.24.0"
+httpx = "^0.27.2"
+ruff = "^0.7.1"
+mypy = "^1.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

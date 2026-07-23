@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "agentic-orchestrator"
+version = "0.1.0"
+description = "Playbook planning and execution, Emergency Agent, per ARCHITECTURE.md section 15 and AGENT_ARCHITECTURE.md section 9"
+authors = ["AEGIS AI Engineering"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.4"
+uvicorn = { extras = ["standard"], version = "^0.32.0" }
+pydantic = { extras = ["email"], version = "^2.9.2" }
+pydantic-settings = "^2.6.0"
+sqlalchemy = { extras = ["asyncio"], version = "^2.0.36" }
+asyncpg = "^0.30.0"
+redis = "^5.2.0"
+structlog = "^24.4.0"
+httpx = "^0.27.2"
+python-jose = { extras = ["cryptography"], version = "^3.3.0" }
+
+# Shared models/migrations + cross-cutting API concerns — see libs/db/README.md
+# and libs/api-common/pyproject.toml. No per-service alembic dependency: libs/db
+# owns the single consolidated migration chain for the entire schema.
+aegis-db = { path = "../../libs/db", develop = true }
+aegis-api-common = { path = "../../libs/api-common", develop = true }
+
+# AGENT_ARCHITECTURE.md — the shared twelve-agent framework (Agent Bus, memory,
+# BaseAgent). No langgraph/langchain/celery: every agent's Core here is real,
+# deterministic/statistical logic wrapping already-real services, not an LLM
+# planner-executor (no LLM API key is configured in this environment).
+aegis-agents-common = { path = "../../libs/agents-common", develop = true }
+aiokafka = "^0.11.0"
+
+# Emergency Response Orchestrator's real, automatic PDF report generation
+# (fpdf2 -- lightweight, pure Python, no native/system dependencies).
+fpdf2 = "^2.8.1"
+
+# AI Copilot's intent classifier -- the same real sentence-embedding model
+# rag-service already loads, reused here for semantic intent matching
+# instead of brittle keyword/regex rules (no LLM is available in this
+# environment, so this is the honest substitute).
+sentence-transformers = "^3.0.0"
+numpy = "^2.0.0"
+
+# Enterprise Reports' real chart rendering (matplotlib, Agg backend) and
+# real .xlsx export (openpyxl) -- CSV export uses the stdlib csv module.
+matplotlib = "^3.9.0"
+openpyxl = "^3.1.5"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-asyncio = "^0.24.0"
+ruff = "^0.7.1"
+mypy = "^1.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

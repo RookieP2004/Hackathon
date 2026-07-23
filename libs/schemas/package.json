@@ -1,0 +1,11 @@
+{
+  "name": "@aegis-ai/schemas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared event/API contracts (ARCHITECTURE.md §10.3, §22.2) — the single source of truth for Kafka event shapes and OpenAPI contracts across every language in the monorepo.",
+  "scripts": {
+    "validate": "echo \"no schemas registered yet — DEVELOPMENT_ROADMAP.md M55 adds the first ones\" && exit 0",
+    "lint": "echo \"no-op until schemas exist\"",
+    "type-check": "echo \"no-op until schemas exist\""
+  }
+}

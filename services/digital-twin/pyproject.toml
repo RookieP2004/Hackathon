@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "digital-twin"
+version = "0.1.0"
+description = "Live plant state graph, topology, and simulation layer, per ARCHITECTURE.md section 16"
+authors = ["AEGIS AI Engineering"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.4"
+uvicorn = { extras = ["standard"], version = "^0.32.0" }
+pydantic = { extras = ["email"], version = "^2.9.2" }
+pydantic-settings = "^2.6.0"
+sqlalchemy = { extras = ["asyncio"], version = "^2.0.36" }
+asyncpg = "^0.30.0"
+redis = "^5.2.0"
+structlog = "^24.4.0"
+
+# Shared models/migrations + cross-cutting API concerns — see libs/db/README.md
+# and libs/api-common/pyproject.toml. No per-service alembic dependency: libs/db
+# owns the single consolidated migration chain for the entire schema.
+aegis-db = { path = "../../libs/db", develop = true }
+aegis-api-common = { path = "../../libs/api-common", develop = true }
+
+# ARCHITECTURE.md §16 — Topology/State/Simulation layers query the Knowledge Graph
+neo4j = "^5.26.0"
+aiokafka = "^0.11.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-asyncio = "^0.24.0"
+httpx = "^0.27.2"
+ruff = "^0.7.1"
+mypy = "^1.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "aegis-sim-data"
+version = "0.1.0"
+description = "Physics-informed sensor/incident simulator (ARCHITECTURE.md §17.4) — the demo data source every service builds against before real OT integrations exist."
+authors = ["AEGIS AI Engineering"]
+packages = [{ include = "sim_data", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+numpy = "^2.1.2"
+pydantic = "^2.9.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
