@@ -44,13 +44,14 @@ async def post_copilot_query(payload: CopilotQueryRequest, request: Request, _pr
     settings = request.app.state.settings
     clients: ServiceClients = request.app.state.copilot_clients
     postgres_dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    pg_pool = request.app.state.pg_pool
 
     session_id = payload.session_id or str(uuid.uuid4())
     session_context = await get_session_context(settings.redis_url, session_id)
 
     intent, intent_confidence = classifier.classify(payload.query)
 
-    equipment = await resolve_equipment(postgres_dsn, payload.query)
+    equipment = await resolve_equipment(postgres_dsn, payload.query, pool=pg_pool)
     hazard_class = resolve_hazard_class(payload.query)
     # Follow-up questions ("why is that increasing?") don't repeat the equipment/hazard --
     # fall back to what this session last talked about.
@@ -64,13 +65,13 @@ async def post_copilot_query(payload: CopilotQueryRequest, request: Request, _pr
     elif intent == "why_risk_increasing":
         result = await handlers.handle_why_risk_increasing(clients, equipment, hazard_class)
     elif intent == "machine_history":
-        result = await handlers.handle_machine_history(clients, postgres_dsn, equipment)
+        result = await handlers.handle_machine_history(clients, postgres_dsn, equipment, pg_pool=pg_pool)
     elif intent == "predict_failures":
         result = await handlers.handle_predict_failures(clients, equipment)
     elif intent == "permit_violations":
-        result = await handlers.handle_permit_violations(postgres_dsn)
+        result = await handlers.handle_permit_violations(postgres_dsn, pg_pool=pg_pool)
     elif intent == "generate_inspection_report":
-        result = await handlers.handle_generate_inspection_report(clients, postgres_dsn, equipment)
+        result = await handlers.handle_generate_inspection_report(clients, postgres_dsn, equipment, pg_pool=pg_pool)
     elif intent == "similar_incidents":
         result = await handlers.handle_similar_incidents(clients, equipment)
     elif intent == "explain_regulation":

@@ -19,6 +19,7 @@ import statistics
 import asyncpg
 
 from aegis_agents import BaseAgent
+from aegis_agents.db import acquire
 from app.agents import topics
 
 EWMA_ALPHA = 0.3
@@ -58,17 +59,14 @@ class SensorAgent(BaseAgent):
     failure_mode = "fail_open"
     tick_interval_seconds = 8.0
 
-    def __init__(self, bus, postgres_dsn: str) -> None:
-        super().__init__(bus, postgres_dsn)
+    def __init__(self, bus, postgres_dsn: str, pg_pool: asyncpg.Pool | None = None) -> None:
+        super().__init__(bus, postgres_dsn, pg_pool)
         self._consecutive_read_failures: dict[int, int] = {}
 
     async def tick(self) -> None:
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
+        async with acquire(self.postgres_dsn, self.pg_pool) as conn:
             for sensor_id in WATCHED_SENSOR_IDS:
                 await self._check_sensor(conn, sensor_id)
-        finally:
-            await conn.close()
 
     async def _check_sensor(self, conn: asyncpg.Connection, sensor_id: int) -> None:
         row = await conn.fetchrow("SELECT tag FROM sensors WHERE id = $1", sensor_id)

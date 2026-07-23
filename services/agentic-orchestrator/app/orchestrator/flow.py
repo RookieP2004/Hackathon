@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+import asyncpg
 import structlog
 
 from app.orchestrator.clients import ServiceClients
@@ -42,6 +43,7 @@ async def run_automatic_emergency_response(
     clients: ServiceClients, postgres_dsn: str, *, hazard_class: str, equipment_id: int | None,
     equipment_tag: str, zone_id: int | None, plant_id: int, score: float, severity: str, confidence: float,
     contributing_factors: list[dict], recommendations: list[str], counterfactuals: list[dict],
+    pg_pool: asyncpg.Pool | None = None,
 ) -> EmergencyResponseResult:
     timeline: list[str] = []
     now = datetime.now(timezone.utc)
@@ -81,7 +83,7 @@ async def run_automatic_emergency_response(
     timeline.append("evacuation_activated")
 
     # 6. (interleaved before 5/timeline-summary) Capture Sensor Data
-    sensor_snapshot = await capture_sensor_data(postgres_dsn, equipment_id)
+    sensor_snapshot = await capture_sensor_data(postgres_dsn, equipment_id, pool=pg_pool)
     await clients.add_timeline_event(incident_id, event_type="sensor_data_captured", event_data={"sensor_count": len(sensor_snapshot.get("sensors", []))})
     timeline.append("sensor_data_captured")
 

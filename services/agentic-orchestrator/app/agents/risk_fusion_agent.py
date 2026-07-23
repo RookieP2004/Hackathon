@@ -18,6 +18,7 @@ import json
 import asyncpg
 
 from aegis_agents import BaseAgent
+from aegis_agents.db import acquire
 
 MIN_CORROBORATING_FACTORS = 2
 
@@ -27,20 +28,17 @@ class RiskFusionAgent(BaseAgent):
     failure_mode = "fail_open"  # per-signal alerting from Sensor/Vision/Worker Agent remains a real safety net (§7)
     tick_interval_seconds = 10.0
 
-    def __init__(self, bus, postgres_dsn: str) -> None:
-        super().__init__(bus, postgres_dsn)
+    def __init__(self, bus, postgres_dsn: str, pg_pool: asyncpg.Pool | None = None) -> None:
+        super().__init__(bus, postgres_dsn, pg_pool)
         self._last_seen_id = 0
 
     async def tick(self) -> None:
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
+        async with acquire(self.postgres_dsn, self.pg_pool) as conn:
             rows = await conn.fetch(
                 "SELECT id, equipment_id, zone_id, score, confidence, contributing_factors, model_version, computed_at "
                 "FROM risk_scores WHERE id > $1 AND model_version LIKE 'risk-fusion:%' ORDER BY id ASC LIMIT 50",
                 self._last_seen_id,
             )
-        finally:
-            await conn.close()
 
         for row in rows:
             self._last_seen_id = max(self._last_seen_id, row["id"])

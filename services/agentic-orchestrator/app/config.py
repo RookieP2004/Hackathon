@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     service_port: int = 8000
 
     database_url: str = "postgresql+asyncpg://aegis:changeme_local_only@localhost:5432/aegis"
-    redis_url: str = "redis://:changeme_local_only@localhost:6379/0"
+    redis_url: str = "redis://localhost:6379/0"
     kafka_brokers: str = "localhost:9092"
 
     # Shared JWT signing secret — every service verifies tokens independently

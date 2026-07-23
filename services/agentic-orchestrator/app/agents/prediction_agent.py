@@ -15,6 +15,7 @@ import json
 import asyncpg
 
 from aegis_agents import BaseAgent
+from aegis_agents.db import acquire
 
 CRITICAL_SCORE_THRESHOLD = 80.0
 
@@ -24,13 +25,12 @@ class PredictionAgent(BaseAgent):
     failure_mode = "fail_open"  # correlated patterns remain visible unscored, never a silent absence of signal (§8)
     tick_interval_seconds = 10.0
 
-    def __init__(self, bus, postgres_dsn: str) -> None:
-        super().__init__(bus, postgres_dsn)
+    def __init__(self, bus, postgres_dsn: str, pg_pool: asyncpg.Pool | None = None) -> None:
+        super().__init__(bus, postgres_dsn, pg_pool)
         self._last_seen_id: int | None = None  # lazily initialized to "now" on the first tick
 
     async def tick(self) -> None:
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
+        async with acquire(self.postgres_dsn, self.pg_pool) as conn:
             if self._last_seen_id is None:
                 # Start watching from "now", not from the beginning of history --
                 # a restarted agent shouldn't spend a potentially long time replaying
@@ -43,8 +43,6 @@ class PredictionAgent(BaseAgent):
                 "FROM risk_scores WHERE id > $1 AND model_version LIKE 'risk-fusion:%' ORDER BY id ASC LIMIT 50",
                 self._last_seen_id,
             )
-        finally:
-            await conn.close()
 
         for row in rows:
             self._last_seen_id = max(self._last_seen_id, row["id"])

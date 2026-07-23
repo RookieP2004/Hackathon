@@ -10,6 +10,7 @@ envelope, which computer-vision's own bespoke REST API doesn't speak.
 
 from __future__ import annotations
 
+import asyncpg
 import httpx
 
 from aegis_agents import BaseAgent
@@ -24,8 +25,11 @@ class VisionAgent(BaseAgent):
     failure_mode = "fail_open"  # "but loudly" -- see the escalation on repeated fetch failure below
     tick_interval_seconds = 6.0
 
-    def __init__(self, bus, postgres_dsn: str, computer_vision_url: str, *, jwt_secret: str, jwt_algorithm: str) -> None:
-        super().__init__(bus, postgres_dsn)
+    def __init__(
+        self, bus, postgres_dsn: str, computer_vision_url: str, *,
+        jwt_secret: str, jwt_algorithm: str, pg_pool: asyncpg.Pool | None = None,
+    ) -> None:
+        super().__init__(bus, postgres_dsn, pg_pool)
         self._computer_vision_url = computer_vision_url
         self._last_seen_observed_at: str | None = None
         self._token_minter = ServiceActorTokenMinter(postgres_dsn=postgres_dsn, jwt_secret=jwt_secret, jwt_algorithm=jwt_algorithm)

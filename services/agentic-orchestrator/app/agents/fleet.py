@@ -8,6 +8,8 @@ failure-recovery policy per its own module.
 
 from __future__ import annotations
 
+import asyncpg
+
 from aegis_agents import BaseAgent, MessageBus, ensure_agent_memory_tables
 
 from app.agents.compliance_agent import ComplianceAgent
@@ -28,10 +30,11 @@ class AgentFleet:
     def __init__(
         self, *, postgres_dsn: str, redis_url: str, knowledge_graph_url: str, computer_vision_url: str,
         rag_service_url: str, predictive_risk_engine_url: str, incident_service_url: str,
-        notification_service_url: str, jwt_secret: str, jwt_algorithm: str,
+        notification_service_url: str, jwt_secret: str, jwt_algorithm: str, pg_pool: asyncpg.Pool | None = None,
     ) -> None:
         self.bus = MessageBus(redis_url)
         self._postgres_dsn = postgres_dsn
+        self._pg_pool = pg_pool
         self._knowledge_graph_url = knowledge_graph_url
         self._computer_vision_url = computer_vision_url
         self._rag_service_url = rag_service_url
@@ -47,22 +50,23 @@ class AgentFleet:
         await self.bus.connect()
 
         self.agents = [
-            SensorAgent(self.bus, self._postgres_dsn),
-            VisionAgent(self.bus, self._postgres_dsn, self._computer_vision_url),
-            WorkerAgent(self.bus, self._postgres_dsn, self._computer_vision_url),
-            PermitAgent(self.bus, self._postgres_dsn, self._knowledge_graph_url, jwt_secret=self._jwt_secret, jwt_algorithm=self._jwt_algorithm),
-            MaintenanceAgent(self.bus, self._postgres_dsn),
-            KnowledgeAgent(self.bus, self._postgres_dsn, self._rag_service_url, self._jwt_secret, self._jwt_algorithm),
-            RiskFusionAgent(self.bus, self._postgres_dsn),
-            PredictionAgent(self.bus, self._postgres_dsn),
+            SensorAgent(self.bus, self._postgres_dsn, self._pg_pool),
+            VisionAgent(self.bus, self._postgres_dsn, self._computer_vision_url, jwt_secret=self._jwt_secret, jwt_algorithm=self._jwt_algorithm, pg_pool=self._pg_pool),
+            WorkerAgent(self.bus, self._postgres_dsn, self._computer_vision_url, jwt_secret=self._jwt_secret, jwt_algorithm=self._jwt_algorithm, pg_pool=self._pg_pool),
+            PermitAgent(self.bus, self._postgres_dsn, self._knowledge_graph_url, jwt_secret=self._jwt_secret, jwt_algorithm=self._jwt_algorithm, pg_pool=self._pg_pool),
+            MaintenanceAgent(self.bus, self._postgres_dsn, self._pg_pool),
+            KnowledgeAgent(self.bus, self._postgres_dsn, self._rag_service_url, self._jwt_secret, self._jwt_algorithm, pg_pool=self._pg_pool),
+            RiskFusionAgent(self.bus, self._postgres_dsn, self._pg_pool),
+            PredictionAgent(self.bus, self._postgres_dsn, self._pg_pool),
             EmergencyAgent(
                 self.bus, self._postgres_dsn, predictive_risk_engine_url=self._predictive_risk_engine_url,
                 incident_service_url=self._incident_service_url, notification_service_url=self._notification_service_url,
                 rag_service_url=self._rag_service_url, jwt_secret=self._jwt_secret, jwt_algorithm=self._jwt_algorithm,
+                pg_pool=self._pg_pool,
             ),
-            ComplianceAgent(self.bus, self._postgres_dsn),
-            LearningAgent(self.bus, self._postgres_dsn),
-            SupervisorAgent(self.bus, self._postgres_dsn),
+            ComplianceAgent(self.bus, self._postgres_dsn, self._pg_pool),
+            LearningAgent(self.bus, self._postgres_dsn, self._pg_pool),
+            SupervisorAgent(self.bus, self._postgres_dsn, self._pg_pool),
         ]
         for agent in self.agents:
             agent.start()

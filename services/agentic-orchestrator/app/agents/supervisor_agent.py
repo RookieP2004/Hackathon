@@ -22,6 +22,7 @@ from __future__ import annotations
 import asyncio
 import time
 
+import asyncpg
 import structlog
 
 from aegis_agents import BaseAgent
@@ -38,8 +39,8 @@ class SupervisorAgent(BaseAgent):
     failure_mode = "fail_closed"
     tick_interval_seconds = 15.0
 
-    def __init__(self, bus, postgres_dsn: str) -> None:
-        super().__init__(bus, postgres_dsn)
+    def __init__(self, bus, postgres_dsn: str, pg_pool: asyncpg.Pool | None = None) -> None:
+        super().__init__(bus, postgres_dsn, pg_pool)
         self.fleet_health: dict[str, dict] = {}
         self._recent_assertions: dict[str, list[tuple[str, dict, float]]] = {}
 

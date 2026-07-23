@@ -24,6 +24,7 @@ from datetime import datetime, timedelta, timezone
 import asyncpg
 import httpx
 
+from aegis_agents.db import acquire
 from app.agents import topics
 from app.copilot.entities import resolve_equipment
 from app.copilot.handlers import handle_why_risk_increasing
@@ -134,11 +135,10 @@ async def begin_maintenance(ctx: DemoContext) -> dict:
 
 async def worker_enters_zone(ctx: DemoContext) -> dict:
     now = datetime.now(timezone.utc)
-    conn = await asyncpg.connect(ctx.postgres_dsn)
     # shift_assignments.period is a plain tsrange (timestamp without time zone) --
     # asyncpg rejects tz-aware datetimes against it, so pass naive UTC values.
     naive_now = now.replace(tzinfo=None)
-    try:
+    async with acquire(ctx.postgres_dsn, ctx.pg_pool) as conn:
         # A replay/previous run may have left this worker's shift assignment for
         # today still overlapping "now" -- the exclusion constraint on
         # (worker_id, period) would otherwise reject a second one for the same
@@ -152,8 +152,6 @@ async def worker_enters_zone(ctx: DemoContext) -> dict:
             "VALUES ($1, $2, $3, $4, tsrange($5, $6))",
             SHIFT_ID, WORKER_PRIYA, ZONE3_ID, now.date(), naive_now, naive_now + timedelta(hours=2),
         )
-    finally:
-        await conn.close()
     return {"worker": "Priya Sharma", "zone": "Reactor Feed Line (Zone 3)"}
 
 
@@ -213,7 +211,7 @@ async def observe_current_risk(ctx: DemoContext) -> dict:
 
 
 async def ask_ai_why(ctx: DemoContext) -> dict:
-    equipment = await resolve_equipment(ctx.postgres_dsn, "V-12")
+    equipment = await resolve_equipment(ctx.postgres_dsn, "V-12", pool=ctx.pg_pool)
     hazard_class = ctx.state.get("top_hazard_class", "gas_leak")
     result = await handle_why_risk_increasing(ctx.clients, equipment, hazard_class)
     return {"answer": result["answer"], "citations": result["citations"]}
@@ -245,9 +243,6 @@ async def summarize_reports(ctx: DemoContext) -> dict:
     incident_id = ctx.state.get("incident_id")
     if incident_id is None:
         return {"reports": []}
-    conn = await asyncpg.connect(ctx.postgres_dsn)
-    try:
+    async with acquire(ctx.postgres_dsn, ctx.pg_pool) as conn:
         rows = await conn.fetch("SELECT report_type, file_url FROM reports WHERE parameters->>'incident_id' = $1", str(incident_id))
-    finally:
-        await conn.close()
     return {"reports": [dict(r) for r in rows]}

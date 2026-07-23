@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncpg
 
 from aegis_agents import BaseAgent
+from aegis_agents.db import acquire
 
 DRIFT_CONFIDENCE_DROP_THRESHOLD = 0.15
 
@@ -22,8 +23,7 @@ class LearningAgent(BaseAgent):
     tick_interval_seconds = 120.0
 
     async def tick(self) -> None:
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
+        async with acquire(self.postgres_dsn, self.pg_pool) as conn:
             rows = await conn.fetch(
                 """
                 SELECT agent_id,
@@ -35,8 +35,6 @@ class LearningAgent(BaseAgent):
                 GROUP BY agent_id
                 """
             )
-        finally:
-            await conn.close()
 
         for row in rows:
             recent, prior = row["recent_avg_confidence"], row["prior_avg_confidence"]

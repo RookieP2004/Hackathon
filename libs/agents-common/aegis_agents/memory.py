@@ -20,6 +20,8 @@ from datetime import datetime
 
 import asyncpg
 
+from aegis_agents.db import acquire
+
 DECISION_LOG_TABLE_DDL = """
 CREATE TABLE IF NOT EXISTS agent_decision_log (
     id BIGSERIAL PRIMARY KEY,
@@ -79,10 +81,11 @@ class DecisionLogEntry:
 class AgentMemory:
     """Bound to one agent_id; every concrete agent owns exactly one of these."""
 
-    def __init__(self, dsn: str, agent_id: str, agent_version: str) -> None:
+    def __init__(self, dsn: str, agent_id: str, agent_version: str, pool: asyncpg.Pool | None = None) -> None:
         self._dsn = dsn
         self.agent_id = agent_id
         self.agent_version = agent_version
+        self._pool = pool
 
     async def log_decision(
         self, *, decision: str, reasoning: str, confidence: float | None = None,
@@ -93,50 +96,38 @@ class AgentMemory:
         caller supplies real text), only typed loosely to keep the table
         usable for agents whose Core is fully deterministic and whose
         "reasoning" is just a plain statement of the rule that fired."""
-        conn = await asyncpg.connect(self._dsn)
-        try:
+        async with acquire(self._dsn, self._pool) as conn:
             row_id = await conn.fetchval(
                 "INSERT INTO agent_decision_log (agent_id, agent_version, decision, reasoning, confidence, evidence_refs, correlation_id) "
                 "VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7) RETURNING id",
                 self.agent_id, self.agent_version, decision, reasoning, confidence,
                 json.dumps(evidence_refs or []), correlation_id,
             )
-        finally:
-            await conn.close()
         return row_id
 
     async def remember_episode(self, *, kind: str, payload: dict, outcome: str | None = None) -> int:
         """Episodic memory (§0.4): this agent's own history of past
         assertions/decisions, the raw material the Learning Agent consumes."""
-        conn = await asyncpg.connect(self._dsn)
-        try:
+        async with acquire(self._dsn, self._pool) as conn:
             row_id = await conn.fetchval(
                 "INSERT INTO agent_episodic_memory (agent_id, kind, payload, outcome) VALUES ($1, $2, $3::jsonb, $4) RETURNING id",
                 self.agent_id, kind, json.dumps(payload), outcome,
             )
-        finally:
-            await conn.close()
         return row_id
 
     async def record_outcome(self, episode_id: int, outcome: str) -> None:
-        conn = await asyncpg.connect(self._dsn)
-        try:
+        async with acquire(self._dsn, self._pool) as conn:
             await conn.execute(
                 "UPDATE agent_episodic_memory SET outcome = $1, outcome_recorded_at = now() WHERE id = $2",
                 outcome, episode_id,
             )
-        finally:
-            await conn.close()
 
     async def recent_decisions(self, limit: int = 20) -> list[DecisionLogEntry]:
-        conn = await asyncpg.connect(self._dsn)
-        try:
+        async with acquire(self._dsn, self._pool) as conn:
             rows = await conn.fetch(
                 "SELECT * FROM agent_decision_log WHERE agent_id = $1 ORDER BY created_at DESC LIMIT $2",
                 self.agent_id, limit,
             )
-        finally:
-            await conn.close()
         return [
             DecisionLogEntry(
                 id=r["id"], agent_id=r["agent_id"], agent_version=r["agent_version"], decision=r["decision"],
@@ -151,11 +142,8 @@ class AgentMemory:
         """The "Why?" affordance (UI_UX_SPECIFICATION.md §0.2), at the agent
         level: fetch a past decision's own recorded reasoning verbatim,
         never regenerate an explanation after the fact."""
-        conn = await asyncpg.connect(self._dsn)
-        try:
+        async with acquire(self._dsn, self._pool) as conn:
             row = await conn.fetchrow(
                 "SELECT reasoning FROM agent_decision_log WHERE id = $1 AND agent_id = $2", decision_id, self.agent_id
             )
-        finally:
-            await conn.close()
         return row["reasoning"] if row else None

@@ -1,0 +1,40 @@
+# Repo-root build context (see infra/docker-compose/docker-compose.yml and
+# services/*/Dockerfile's own comment on why the context is the repo root,
+# not each service's own directory) only ever needs services/ and the three
+# libs/ packages referenced via Poetry path dependencies -- everything below
+# is either irrelevant to a Python service build or, in node_modules' case,
+# actively breaks the build (Windows symlinks inside nested node_modules
+# fail Docker's tar-based context transfer with "unknown file mode").
+
+.git/
+**/node_modules/
+**/node_modules
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+.pnpm-store/
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.venv*/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.env
+.env.local
+.env.*.local
+
+apps/
+docs/
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

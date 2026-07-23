@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+import asyncpg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -36,12 +37,21 @@ async def lifespan(app: FastAPI):
     assert_not_placeholder_secret(settings.jwt_secret, aegis_env=settings.aegis_env, name="jwt_secret")
 
     dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+
+    # A shared pool, not a connect-per-call: twelve continuously-running
+    # agents (one Postgres round trip or more per tick, most on a
+    # 8-20s cadence) previously each opened and closed their own raw
+    # connection per query -- the same class of bottleneck the fusion
+    # pipeline had (predictive-risk-engine/app/fusion/db.py).
+    pg_pool = await asyncpg.create_pool(dsn, min_size=2, max_size=20)
+    app.state.pg_pool = pg_pool
+
     fleet = AgentFleet(
         postgres_dsn=dsn, redis_url=settings.redis_url, knowledge_graph_url=settings.knowledge_graph_url,
         computer_vision_url=settings.computer_vision_url, rag_service_url=settings.rag_service_url,
         predictive_risk_engine_url=settings.predictive_risk_engine_url, incident_service_url=settings.incident_service_url,
         notification_service_url=settings.notification_service_url,
-        jwt_secret=settings.jwt_secret, jwt_algorithm=settings.jwt_algorithm,
+        jwt_secret=settings.jwt_secret, jwt_algorithm=settings.jwt_algorithm, pg_pool=pg_pool,
     )
     app.state.fleet = fleet
     await fleet.start()
@@ -55,11 +65,13 @@ async def lifespan(app: FastAPI):
     )
     app.state.demo_player = DemoPlayer(
         clients=app.state.copilot_clients, postgres_dsn=dsn, bus=fleet.bus, iot_simulator_url=settings.iot_simulator_url,
+        pg_pool=pg_pool,
     )
 
     yield
 
     await fleet.stop()
+    await pg_pool.close()
     logger.info("service_stopping", service=settings.service_name)
 
 

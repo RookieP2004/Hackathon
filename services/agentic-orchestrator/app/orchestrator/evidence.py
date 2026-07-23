@@ -14,19 +14,22 @@ from pathlib import Path
 
 import asyncpg
 
+from aegis_agents.db import acquire
+
 EVIDENCE_DIR = Path(__file__).resolve().parent.parent.parent / "generated_reports" / "evidence"
 EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
 
 
-async def capture_sensor_data(postgres_dsn: str, equipment_id: int | None, *, window: int = 20) -> dict:
+async def capture_sensor_data(
+    postgres_dsn: str, equipment_id: int | None, *, window: int = 20, pool: asyncpg.Pool | None = None
+) -> dict:
     """A real, verbatim snapshot of the specific sensors physically monitoring
     the triggering equipment, at the moment of the incident -- not a
     re-derivation, the actual raw readings that were used."""
     if equipment_id is None:
         return {"equipment_id": None, "sensors": []}
 
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+    async with acquire(postgres_dsn, pool) as conn:
         sensors = await conn.fetch(
             "SELECT s.id, s.tag, st.name AS sensor_type, s.unit FROM sensors s "
             "JOIN sensor_types st ON st.id = s.sensor_type_id WHERE s.equipment_id = $1",
@@ -43,8 +46,6 @@ async def capture_sensor_data(postgres_dsn: str, equipment_id: int | None, *, wi
                 "sensor_id": sensor["id"], "tag": sensor["tag"], "sensor_type": sensor["sensor_type"], "unit": sensor["unit"],
                 "readings": [{"value": float(r["value"]), "quality": r["quality"], "recorded_at": r["recorded_at"].isoformat()} for r in readings],
             })
-    finally:
-        await conn.close()
 
     return {"equipment_id": equipment_id, "captured_at": datetime.now(timezone.utc).isoformat(), "sensors": snapshot}
 

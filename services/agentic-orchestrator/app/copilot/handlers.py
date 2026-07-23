@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 import asyncpg
 
+from aegis_agents.db import acquire
 from app.orchestrator.clients import ServiceClients
 from app.orchestrator.evidence import capture_sensor_data
 from app.orchestrator.reports import generate_inspection_report
@@ -88,14 +89,16 @@ async def handle_why_risk_increasing(clients: ServiceClients, equipment: dict | 
     return {"answer": result["summary"], "citations": result["citations"], "data": {"assessment": assessment}}
 
 
-async def handle_machine_history(clients: ServiceClients, postgres_dsn: str, equipment: dict | None) -> dict:
+async def handle_machine_history(
+    clients: ServiceClients, postgres_dsn: str, equipment: dict | None, pg_pool: asyncpg.Pool | None = None
+) -> dict:
     if equipment is None:
         return {"answer": "Which machine? I couldn't identify one in your question -- try mentioning its tag or name.", "citations": [], "data": {}}
 
     equipment_id = equipment["equipment_id"]
     maintenance_records = await clients.list_maintenance(equipment_id=equipment_id, page_size=5)
     incidents = await clients.list_incidents(equipment_id=equipment_id, page_size=5)
-    sensor_snapshot = await capture_sensor_data(postgres_dsn, equipment_id)
+    sensor_snapshot = await capture_sensor_data(postgres_dsn, equipment_id, pool=pg_pool)
 
     lines = [f"History for {equipment['tag']} ({equipment['name']}):"]
     citations = []
@@ -155,9 +158,8 @@ async def handle_predict_failures(clients: ServiceClients, equipment: dict | Non
     return {"answer": "\n".join(lines), "citations": citations, "data": {"predictions": predictions}}
 
 
-async def handle_permit_violations(postgres_dsn: str) -> dict:
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+async def handle_permit_violations(postgres_dsn: str, pg_pool: asyncpg.Pool | None = None) -> dict:
+    async with acquire(postgres_dsn, pg_pool) as conn:
         rows = await conn.fetch(
             """
             SELECT p.id, p.permit_number, p.valid_to, p.equipment_id, p.zone_id, e.tag AS equipment_tag, z.name AS zone_name
@@ -168,8 +170,6 @@ async def handle_permit_violations(postgres_dsn: str) -> dict:
             ORDER BY p.valid_to ASC
             """
         )
-    finally:
-        await conn.close()
 
     if not rows:
         return {"answer": "No permit violations: every active permit is within its valid window.", "citations": [], "data": {"permits": []}}
@@ -189,7 +189,9 @@ async def handle_permit_violations(postgres_dsn: str) -> dict:
     }
 
 
-async def handle_generate_inspection_report(clients: ServiceClients, postgres_dsn: str, equipment: dict | None) -> dict:
+async def handle_generate_inspection_report(
+    clients: ServiceClients, postgres_dsn: str, equipment: dict | None, pg_pool: asyncpg.Pool | None = None
+) -> dict:
     if equipment is None:
         return {"answer": "Which equipment should the inspection report cover? I couldn't identify one in your question.", "citations": [], "data": {}}
 
@@ -197,7 +199,7 @@ async def handle_generate_inspection_report(clients: ServiceClients, postgres_ds
     assessments = await clients.assess_equipment(equipment_id)
     maintenance_records = await clients.list_maintenance(equipment_id=equipment_id, page_size=10)
     incidents = await clients.list_incidents(equipment_id=equipment_id, page_size=10)
-    sensor_snapshot = await capture_sensor_data(postgres_dsn, equipment_id)
+    sensor_snapshot = await capture_sensor_data(postgres_dsn, equipment_id, pool=pg_pool)
 
     file_path = generate_inspection_report(
         equipment_id=equipment_id, equipment_tag=equipment["tag"], zone_id=equipment["zone_id"],

@@ -54,34 +54,35 @@ async def post_generate_report(payload: ReportGenerateRequest, request: Request,
     settings = request.app.state.settings
     clients: ServiceClients = request.app.state.copilot_clients
     postgres_dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    pool = request.app.state.pg_pool
 
     if payload.report_type in _PERIOD_DAYS:
         end = payload.date_range_end or datetime.now(timezone.utc).date()
         start = payload.date_range_start or (end - timedelta(days=_PERIOD_DAYS[payload.report_type]))
-        content = await data.aggregate_period_summary(postgres_dsn, plant_id=payload.plant_id, start=start, end=end, period_label=payload.report_type.capitalize())
+        content = await data.aggregate_period_summary(postgres_dsn, plant_id=payload.plant_id, start=start, end=end, period_label=payload.report_type.capitalize(), pool=pool)
     elif payload.report_type in _INCIDENT_SCOPED_TYPES:
         try:
-            content = await data.aggregate_rca(clients, postgres_dsn, payload.incident_id, report_type=payload.report_type)
+            content = await data.aggregate_rca(clients, postgres_dsn, payload.incident_id, report_type=payload.report_type, pool=pool)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
     elif payload.report_type == "compliance":
-        content = await data.aggregate_compliance(clients, postgres_dsn, payload.plant_id)
+        content = await data.aggregate_compliance(clients, postgres_dsn, payload.plant_id, pool=pool)
     elif payload.report_type == "safety_score":
         end = payload.date_range_end or datetime.now(timezone.utc).date()
         start = payload.date_range_start or (end - timedelta(days=30))
-        content = await data.compute_safety_score(postgres_dsn, plant_id=payload.plant_id, start=start, end=end)
+        content = await data.compute_safety_score(postgres_dsn, plant_id=payload.plant_id, start=start, end=end, pool=pool)
     elif payload.report_type == "machine_health":
-        content = await data.aggregate_machine_health(postgres_dsn, payload.plant_id)
+        content = await data.aggregate_machine_health(postgres_dsn, payload.plant_id, pool=pool)
     elif payload.report_type == "worker_safety":
-        content = await data.aggregate_worker_safety(clients, postgres_dsn, payload.plant_id)
+        content = await data.aggregate_worker_safety(clients, postgres_dsn, payload.plant_id, pool=pool)
     elif payload.report_type == "permit":
         end = payload.date_range_end or datetime.now(timezone.utc).date()
         start = payload.date_range_start or (end - timedelta(days=30))
-        content = await data.aggregate_permit_report(postgres_dsn, plant_id=payload.plant_id, start=start, end=end)
+        content = await data.aggregate_permit_report(postgres_dsn, plant_id=payload.plant_id, start=start, end=end, pool=pool)
     else:  # maintenance
         end = payload.date_range_end or datetime.now(timezone.utc).date()
         start = payload.date_range_start or (end - timedelta(days=30))
-        content = await data.aggregate_maintenance_report(postgres_dsn, plant_id=payload.plant_id, start=start, end=end)
+        content = await data.aggregate_maintenance_report(postgres_dsn, plant_id=payload.plant_id, start=start, end=end, pool=pool)
 
     file_path = _RENDERERS[payload.format](content)
 

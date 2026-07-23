@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncpg
 
 from aegis_agents import BaseAgent
+from aegis_agents.db import acquire
 
 
 class ComplianceAgent(BaseAgent):
@@ -19,12 +20,9 @@ class ComplianceAgent(BaseAgent):
     tick_interval_seconds = 60.0
 
     async def tick(self) -> None:
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
+        async with acquire(self.postgres_dsn, self.pg_pool) as conn:
             await self._check_expired_active_permits(conn)
             await self._check_audit_log_liveness(conn)
-        finally:
-            await conn.close()
 
     async def _check_expired_active_permits(self, conn: asyncpg.Connection) -> None:
         expired = await conn.fetch(

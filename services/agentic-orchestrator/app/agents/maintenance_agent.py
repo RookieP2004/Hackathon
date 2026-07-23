@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncpg
 
 from aegis_agents import BaseAgent
+from aegis_agents.db import acquire
 
 HIGH_SEVERITY_SCORE_THRESHOLD = 60.0
 PREDICTIVE_MAINTENANCE_TYPE_ID = 3
@@ -23,8 +24,7 @@ class MaintenanceAgent(BaseAgent):
     tick_interval_seconds = 15.0
 
     async def tick(self) -> None:
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
+        async with acquire(self.postgres_dsn, self.pg_pool) as conn:
             candidates = await conn.fetch(
                 """
                 SELECT id, equipment_id, score, confidence, model_version, computed_at
@@ -38,8 +38,6 @@ class MaintenanceAgent(BaseAgent):
             )
             for row in candidates:
                 await self._maybe_create_work_order(conn, row)
-        finally:
-            await conn.close()
 
     async def _maybe_create_work_order(self, conn: asyncpg.Connection, row) -> None:
         marker = f"[auto:risk_score:{row['id']}]"

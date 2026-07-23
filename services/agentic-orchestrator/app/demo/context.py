@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+import asyncpg
 from aegis_agents import MessageBus
 
 from app.orchestrator.clients import ServiceClients
@@ -21,3 +22,4 @@ class DemoContext:
     bus: MessageBus
     iot_simulator_url: str
     state: dict = field(default_factory=dict)
+    pg_pool: asyncpg.Pool | None = None

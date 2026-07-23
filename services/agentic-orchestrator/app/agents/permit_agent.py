@@ -12,6 +12,7 @@ Fails closed (§4): if the conflict check cannot be completed, the verdict is
 
 from __future__ import annotations
 
+import asyncpg
 import httpx
 import structlog
 
@@ -27,8 +28,11 @@ class PermitAgent(BaseAgent):
     failure_mode = "fail_closed"
     tick_interval_seconds = 30.0  # heartbeat/bookkeeping cadence only -- the real work is the subscriber loop
 
-    def __init__(self, bus, postgres_dsn: str, knowledge_graph_url: str, *, jwt_secret: str, jwt_algorithm: str) -> None:
-        super().__init__(bus, postgres_dsn)
+    def __init__(
+        self, bus, postgres_dsn: str, knowledge_graph_url: str, *,
+        jwt_secret: str, jwt_algorithm: str, pg_pool: asyncpg.Pool | None = None,
+    ) -> None:
+        super().__init__(bus, postgres_dsn, pg_pool)
         self._knowledge_graph_url = knowledge_graph_url
         self._token_minter = ServiceActorTokenMinter(postgres_dsn=postgres_dsn, jwt_secret=jwt_secret, jwt_algorithm=jwt_algorithm)
 

@@ -12,6 +12,7 @@ import asyncio
 import time
 from datetime import datetime, timezone
 
+import asyncpg
 import structlog
 
 from aegis_agents import MessageBus
@@ -25,11 +26,15 @@ _SLEEP_GRANULARITY_SECONDS = 0.5
 
 
 class DemoPlayer:
-    def __init__(self, *, clients: ServiceClients, postgres_dsn: str, bus: MessageBus, iot_simulator_url: str) -> None:
+    def __init__(
+        self, *, clients: ServiceClients, postgres_dsn: str, bus: MessageBus, iot_simulator_url: str,
+        pg_pool: asyncpg.Pool | None = None,
+    ) -> None:
         self._clients = clients
         self._postgres_dsn = postgres_dsn
         self._bus = bus
         self._iot_simulator_url = iot_simulator_url
+        self._pg_pool = pg_pool
 
         self._task: asyncio.Task | None = None
         self._status = "idle"  # idle | running | paused | completed | failed | stopped
@@ -55,7 +60,10 @@ class DemoPlayer:
         self._pause_event.set()
         self._status = "running"
 
-        ctx = DemoContext(clients=self._clients, postgres_dsn=self._postgres_dsn, bus=self._bus, iot_simulator_url=self._iot_simulator_url)
+        ctx = DemoContext(
+            clients=self._clients, postgres_dsn=self._postgres_dsn, bus=self._bus,
+            iot_simulator_url=self._iot_simulator_url, pg_pool=self._pg_pool,
+        )
         self._task = asyncio.create_task(self._run(ctx))
         return {"started": True}
 

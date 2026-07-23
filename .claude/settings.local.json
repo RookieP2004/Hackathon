@@ -162,7 +162,16 @@
       "Bash(PYTHONPATH=\"D:/Hackathon/AegisAI/libs/api-common;D:/Hackathon/AegisAI/libs/db;D:/Hackathon/AegisAI/libs/agents-common\" \"D:/Hackathon/AegisAI/.venv-services/Scripts/python.exe\" -m pytest tests/test_orchestrator -q)",
       "Bash(PYTHONPATH=\"D:/Hackathon/AegisAI/libs/api-common;D:/Hackathon/AegisAI/libs/db\" \"D:/Hackathon/AegisAI/.venv-services/Scripts/python.exe\" -m pytest tests/ -q)",
       "Bash(PYTHONPATH=\"D:/Hackathon/AegisAI/libs/api-common;D:/Hackathon/AegisAI/libs/db\" \"D:/Hackathon/AegisAI/.venv-services/Scripts/python.exe\" -m pytest tests/test_fusion_pipeline_integration.py::test_assess_equipment_writes_real_risk_score_rows -q)",
-      "Artifact"
+      "Artifact",
+      "Bash(docker --version)",
+      "Bash(docker info *)",
+      "Bash(docker build *)",
+      "Bash(DOCKER_BUILDKIT=1 docker build --no-cache -f services/predictive-risk-engine/Dockerfile -t aegis-test-priskeng2 .)",
+      "Bash(docker rmi *)",
+      "Bash(PYTHONPATH=\"D:/Hackathon/AegisAI/libs/api-common;D:/Hackathon/AegisAI/libs/db;D:/Hackathon/AegisAI/libs/agents-common\" \"D:/Hackathon/AegisAI/.venv-services/Scripts/python.exe\" -m pytest tests/ -q)",
+      "Bash(docker exec aegis-redis-dev *)",
+      "Bash(PYTHONPATH=\"D:/Hackathon/AegisAI/libs/api-common;D:/Hackathon/AegisAI/libs/db;D:/Hackathon/AegisAI/libs/agents-common\" \"D:/Hackathon/AegisAI/.venv-services/Scripts/python.exe\" -m pytest tests/test_agents/test_emergency_agent.py -q -s)",
+      "Bash(PYTHONPATH=\"D:/Hackathon/AegisAI/libs/api-common;D:/Hackathon/AegisAI/libs/db;D:/Hackathon/AegisAI/libs/agents-common\" \"D:/Hackathon/AegisAI/.venv-services/Scripts/python.exe\" -m pytest tests/test_agents/test_emergency_agent.py -q)"
     ]
   }
 }

@@ -7,7 +7,7 @@ COMPUTER_VISION_URL = "http://localhost:8004"
 
 
 async def test_vision_agent_republishes_real_confirmed_events(bus):
-    agent = VisionAgent(bus, POSTGRES_DSN, COMPUTER_VISION_URL)
+    agent = VisionAgent(bus, POSTGRES_DSN, COMPUTER_VISION_URL, jwt_secret="changeme_generate_a_real_secret_before_any_shared_deployment", jwt_algorithm="HS256")
     agent.agent_id = "zztest-vision-agent"
     agent.memory.agent_id = "zztest-vision-agent"
 

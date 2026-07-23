@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import asyncpg
 
+from aegis_agents.db import acquire
 from app.orchestrator.clients import ServiceClients
 from app.reports import charts
 from app.reports.content import ReportContent, ReportSection
@@ -38,12 +39,11 @@ def _pct_change(current: float, previous: float) -> str:
     return f"{'+' if change >= 0 else ''}{change:.0f}% vs previous period"
 
 
-async def aggregate_period_summary(postgres_dsn: str, *, plant_id: int, start: date, end: date, period_label: str) -> ReportContent:
+async def aggregate_period_summary(postgres_dsn: str, *, plant_id: int, start: date, end: date, period_label: str, pool: asyncpg.Pool | None = None) -> ReportContent:
     period_length = end - start
     prev_start, prev_end = start - period_length, start
 
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+    async with acquire(postgres_dsn, pool) as conn:
         zone_ids, equipment_ids = await _plant_scope(conn, plant_id)
 
         incidents = await conn.fetch(
@@ -81,8 +81,6 @@ async def aggregate_period_summary(postgres_dsn: str, *, plant_id: int, start: d
             "SELECT count(*) FROM maintenance_records WHERE equipment_id = ANY($1::bigint[]) AND status = 'completed' AND completed_at >= $2 AND completed_at < $3",
             equipment_ids, start, end,
         )
-    finally:
-        await conn.close()
 
     severity_counts: dict[str, int] = {}
     for incident in incidents:
@@ -141,9 +139,8 @@ async def aggregate_period_summary(postgres_dsn: str, *, plant_id: int, start: d
     )
 
 
-async def aggregate_rca(clients: ServiceClients, postgres_dsn: str, incident_id: int, *, report_type: str = "rca") -> ReportContent:
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+async def aggregate_rca(clients: ServiceClients, postgres_dsn: str, incident_id: int, *, report_type: str = "rca", pool: asyncpg.Pool | None = None) -> ReportContent:
+    async with acquire(postgres_dsn, pool) as conn:
         incident = await conn.fetchrow("SELECT * FROM incidents WHERE id = $1", incident_id)
         if incident is None:
             raise ValueError(f"No incident with id {incident_id}")
@@ -154,8 +151,6 @@ async def aggregate_rca(clients: ServiceClients, postgres_dsn: str, incident_id:
         if incident["equipment_id"] is not None:
             equipment_row = await conn.fetchrow("SELECT tag FROM equipment WHERE id = $1", incident["equipment_id"])
             equipment_tag = equipment_row["tag"] if equipment_row else None
-    finally:
-        await conn.close()
 
     assessments: list[dict] = []
     if incident["equipment_id"] is not None:
@@ -214,9 +209,8 @@ async def aggregate_rca(clients: ServiceClients, postgres_dsn: str, incident_id:
     )
 
 
-async def aggregate_compliance(clients: ServiceClients, postgres_dsn: str, plant_id: int) -> ReportContent:
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+async def aggregate_compliance(clients: ServiceClients, postgres_dsn: str, plant_id: int, *, pool: asyncpg.Pool | None = None) -> ReportContent:
+    async with acquire(postgres_dsn, pool) as conn:
         zone_ids, equipment_ids = await _plant_scope(conn, plant_id)
         permit_rows = await conn.fetch(
             """
@@ -227,8 +221,6 @@ async def aggregate_compliance(clients: ServiceClients, postgres_dsn: str, plant
             """,
             zone_ids, equipment_ids,
         )
-    finally:
-        await conn.close()
 
     gaps_by_regulation: dict[str, list[dict]] = {}
     for code in _REGULATION_CODES:
@@ -275,9 +267,8 @@ async def aggregate_compliance(clients: ServiceClients, postgres_dsn: str, plant
     )
 
 
-async def compute_safety_score(postgres_dsn: str, *, plant_id: int, start: date, end: date) -> ReportContent:
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+async def compute_safety_score(postgres_dsn: str, *, plant_id: int, start: date, end: date, pool: asyncpg.Pool | None = None) -> ReportContent:
+    async with acquire(postgres_dsn, pool) as conn:
         zone_ids, equipment_ids = await _plant_scope(conn, plant_id)
         incident_rows = await conn.fetch(
             "SELECT severity, count(*) AS n FROM incidents WHERE plant_id = $1 AND opened_at >= $2 AND opened_at < $3 GROUP BY severity",
@@ -295,8 +286,6 @@ async def compute_safety_score(postgres_dsn: str, *, plant_id: int, start: date,
             "SELECT avg(score) FROM risk_scores WHERE (zone_id = ANY($1::bigint[]) OR equipment_id = ANY($2::bigint[])) AND computed_at >= $3 AND computed_at < $4",
             zone_ids, equipment_ids, start, end,
         )
-    finally:
-        await conn.close()
 
     incident_penalty = min(60, sum(_SEVERITY_WEIGHT.get(r["severity"], 1) * r["n"] for r in incident_rows))
     alert_penalty = min(20, sum(_ALERT_SEVERITY_WEIGHT.get(r["severity"], 0) * r["n"] for r in alert_rows))
@@ -335,9 +324,8 @@ async def compute_safety_score(postgres_dsn: str, *, plant_id: int, start: date,
     )
 
 
-async def aggregate_machine_health(postgres_dsn: str, plant_id: int) -> ReportContent:
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+async def aggregate_machine_health(postgres_dsn: str, plant_id: int, *, pool: asyncpg.Pool | None = None) -> ReportContent:
+    async with acquire(postgres_dsn, pool) as conn:
         zone_ids, _ = await _plant_scope(conn, plant_id)
         equipment_rows = await conn.fetch(
             "SELECT id, tag, name, status, criticality FROM equipment WHERE zone_id = ANY($1::bigint[]) ORDER BY criticality DESC", zone_ids
@@ -356,8 +344,6 @@ async def aggregate_machine_health(postgres_dsn: str, plant_id: int) -> ReportCo
             "SELECT equipment_id, max(score) AS top_score FROM risk_scores WHERE equipment_id = ANY($1::bigint[]) AND computed_at > now() - interval '15 minutes' GROUP BY equipment_id",
             equipment_ids,
         )
-    finally:
-        await conn.close()
 
     open_maintenance_by_equipment = {r["equipment_id"]: r["n"] for r in open_maintenance}
     latest_score_by_equipment = {r["equipment_id"]: float(r["top_score"]) for r in latest_scores}
@@ -405,14 +391,13 @@ async def aggregate_machine_health(postgres_dsn: str, plant_id: int) -> ReportCo
     )
 
 
-async def aggregate_worker_safety(clients: ServiceClients, postgres_dsn: str, plant_id: int) -> ReportContent:
+async def aggregate_worker_safety(clients: ServiceClients, postgres_dsn: str, plant_id: int, *, pool: asyncpg.Pool | None = None) -> ReportContent:
     try:
         exposed_workers = await clients.graph_worker_exposure(min_score=70, within_minutes=1440)
     except Exception:
         exposed_workers = []
 
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+    async with acquire(postgres_dsn, pool) as conn:
         # incidents don't persist hazard_class directly (only transient at
         # assessment time) -- the AI-generated summary literally narrates
         # "<hazard> risk" per app/orchestrator/summary.py's template, so this
@@ -426,8 +411,6 @@ async def aggregate_worker_safety(clients: ServiceClients, postgres_dsn: str, pl
             "SELECT count(DISTINCT worker_id) FROM permits p JOIN zones z ON z.id = p.zone_id JOIN buildings b ON b.id = z.building_id WHERE b.plant_id = $1 AND p.status = 'active'",
             plant_id,
         )
-    finally:
-        await conn.close()
 
     executive_summary = (
         f"Worker safety snapshot for plant {plant_id}: {len(exposed_workers)} worker(s) currently in a zone above the "
@@ -464,9 +447,8 @@ async def aggregate_worker_safety(clients: ServiceClients, postgres_dsn: str, pl
     )
 
 
-async def aggregate_permit_report(postgres_dsn: str, *, plant_id: int, start: date, end: date) -> ReportContent:
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+async def aggregate_permit_report(postgres_dsn: str, *, plant_id: int, start: date, end: date, pool: asyncpg.Pool | None = None) -> ReportContent:
+    async with acquire(postgres_dsn, pool) as conn:
         zone_ids, equipment_ids = await _plant_scope(conn, plant_id)
         issued = await conn.fetch(
             """
@@ -489,8 +471,6 @@ async def aggregate_permit_report(postgres_dsn: str, *, plant_id: int, start: da
             """,
             zone_ids, equipment_ids,
         )
-    finally:
-        await conn.close()
 
     executive_summary = (
         f"Permit report for plant {plant_id} ({start.isoformat()} to {end.isoformat()}): {len(issued)} permit(s) issued, "
@@ -523,9 +503,8 @@ async def aggregate_permit_report(postgres_dsn: str, *, plant_id: int, start: da
     )
 
 
-async def aggregate_maintenance_report(postgres_dsn: str, *, plant_id: int, start: date, end: date) -> ReportContent:
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+async def aggregate_maintenance_report(postgres_dsn: str, *, plant_id: int, start: date, end: date, pool: asyncpg.Pool | None = None) -> ReportContent:
+    async with acquire(postgres_dsn, pool) as conn:
         _, equipment_ids = await _plant_scope(conn, plant_id)
         records = await conn.fetch(
             """
@@ -541,8 +520,6 @@ async def aggregate_maintenance_report(postgres_dsn: str, *, plant_id: int, star
             "WHERE m.equipment_id = ANY($1::bigint[]) AND m.status = 'scheduled' AND m.scheduled_date < now()::date",
             equipment_ids,
         )
-    finally:
-        await conn.close()
 
     status_counts: dict[str, int] = {}
     total_cost = 0.0

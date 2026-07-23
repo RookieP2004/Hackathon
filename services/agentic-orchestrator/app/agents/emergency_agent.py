@@ -17,10 +17,12 @@ unreachable.
 
 from __future__ import annotations
 
+import asyncpg
 import httpx
 import structlog
 
 from aegis_agents import BaseAgent
+from aegis_agents.db import acquire
 from app.agents import topics
 from app.orchestrator.clients import ServiceClients
 from app.orchestrator.flow import run_automatic_emergency_response
@@ -36,8 +38,9 @@ class EmergencyAgent(BaseAgent):
     def __init__(
         self, bus, postgres_dsn: str, *, predictive_risk_engine_url: str, incident_service_url: str,
         notification_service_url: str, rag_service_url: str, jwt_secret: str, jwt_algorithm: str,
+        pg_pool: asyncpg.Pool | None = None,
     ) -> None:
-        super().__init__(bus, postgres_dsn)
+        super().__init__(bus, postgres_dsn, pg_pool)
         self._predictive_risk_engine_url = predictive_risk_engine_url
         self._clients = ServiceClients(
             postgres_dsn=postgres_dsn, incident_service_url=incident_service_url,
@@ -122,7 +125,7 @@ class EmergencyAgent(BaseAgent):
                 plant_id=await self._resolve_plant_id(zone_id or assessment.get("zone_id")),
                 score=assessment["score"], severity=assessment["severity"], confidence=assessment["posterior_probability"],
                 contributing_factors=assessment["contributing_factors"], recommendations=assessment["recommendations"],
-                counterfactuals=assessment["counterfactuals"],
+                counterfactuals=assessment["counterfactuals"], pg_pool=self.pg_pool,
             )
         except httpx.HTTPError as exc:
             await self.escalate(
@@ -153,13 +156,8 @@ class EmergencyAgent(BaseAgent):
         )
 
     async def _has_open_incident(self, equipment_id: int) -> bool:
-        import asyncpg
-
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
+        async with acquire(self.postgres_dsn, self.pg_pool) as conn:
             row = await conn.fetchrow("SELECT id FROM incidents WHERE equipment_id = $1 AND status != 'closed' LIMIT 1", equipment_id)
-        finally:
-            await conn.close()
         return row is not None
 
     async def _fetch_current_assessment(self, equipment_id: int | None, hazard_class: str) -> dict | None:
@@ -178,11 +176,6 @@ class EmergencyAgent(BaseAgent):
     async def _resolve_plant_id(self, zone_id: int | None) -> int:
         if zone_id is None:
             return 1
-        import asyncpg
-
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
+        async with acquire(self.postgres_dsn, self.pg_pool) as conn:
             row = await conn.fetchrow("SELECT b.plant_id FROM zones z JOIN buildings b ON b.id = z.building_id WHERE z.id = $1", zone_id)
-        finally:
-            await conn.close()
         return row["plant_id"] if row else 1

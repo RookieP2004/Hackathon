@@ -10,19 +10,15 @@ above a minimum relevance threshold) that endpoint already enforces.
 
 from __future__ import annotations
 
-import time
-
 import asyncpg
 import httpx
 import structlog
-from jose import jwt
 
 from aegis_agents import BaseAgent
+from aegis_api_common import ServiceActorTokenMinter
 from app.agents import topics
 
 logger = structlog.get_logger(__name__)
-
-_ROLE_NAME = "safety_officer"
 
 
 class KnowledgeAgent(BaseAgent):
@@ -30,13 +26,13 @@ class KnowledgeAgent(BaseAgent):
     failure_mode = "fail_open"  # "reduced-grounding" labeling per §6, never a hard block
     tick_interval_seconds = 30.0
 
-    def __init__(self, bus, postgres_dsn: str, rag_service_url: str, jwt_secret: str, jwt_algorithm: str) -> None:
-        super().__init__(bus, postgres_dsn)
+    def __init__(
+        self, bus, postgres_dsn: str, rag_service_url: str, jwt_secret: str, jwt_algorithm: str,
+        pg_pool: asyncpg.Pool | None = None,
+    ) -> None:
+        super().__init__(bus, postgres_dsn, pg_pool)
         self._rag_service_url = rag_service_url
-        self._jwt_secret = jwt_secret
-        self._jwt_algorithm = jwt_algorithm
-        self._cached_token: str | None = None
-        self._token_expires_at: float = 0.0
+        self._token_minter = ServiceActorTokenMinter(postgres_dsn=postgres_dsn, jwt_secret=jwt_secret, jwt_algorithm=jwt_algorithm)
 
     async def tick(self) -> None:
         return
@@ -52,34 +48,13 @@ class KnowledgeAgent(BaseAgent):
                 except Exception:
                     logger.error("knowledge_agent_response_also_failed", correlation_id=message.correlation_id)
 
-    async def _get_token(self) -> str:
-        now = time.time()
-        if self._cached_token and now < self._token_expires_at - 30:
-            return self._cached_token
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
-            row = await conn.fetchrow(
-                "SELECT u.id, u.default_role_id FROM users u JOIN roles r ON r.id = u.default_role_id WHERE r.name = $1 LIMIT 1",
-                _ROLE_NAME,
-            )
-        finally:
-            await conn.close()
-        expires_at = now + 600
-        token = jwt.encode(
-            {"sub": str(row["id"]), "role_id": row["default_role_id"], "type": "access", "exp": int(expires_at)},
-            self._jwt_secret, algorithm=self._jwt_algorithm,
-        )
-        self._cached_token, self._token_expires_at = token, expires_at
-        return token
-
     async def _handle_query(self, message) -> None:
         query_text = message.payload.get("query", "")
         try:
-            token = await self._get_token()
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.post(
                     f"{self._rag_service_url}/rag/query", json={"query": query_text},
-                    headers={"Authorization": f"Bearer {token}"},
+                    headers=await self._token_minter.auth_headers(),
                 )
                 response.raise_for_status()
                 result = response.json()

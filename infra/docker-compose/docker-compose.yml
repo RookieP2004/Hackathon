@@ -57,13 +57,19 @@ services:
 
   redis:
     image: redis:7.4-alpine
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-changeme_local_only}"]
+    # No --requirepass: tried it, reverted it -- every test fixture across the
+    # agentic-orchestrator suite hardcodes a bare `redis://localhost:6379/0`
+    # (see tests/test_agents/conftest.py and friends), and any already-running
+    # service's Redis client was constructed before a password would exist.
+    # Adding auth here is a real improvement but a cross-cutting one -- it
+    # needs every hardcoded test URL updated and every live service restarted
+    # in the same change, not a one-line compose edit. Flagged, not done.
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme_local_only}", "--no-auth-warning", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -99,7 +105,7 @@ services:
   # ---------------------------------------------------------------------------
   ingestion-gateway:
     <<: *service-base
-    build: { context: ../../services/ingestion-gateway }
+    build: { context: ../.., dockerfile: services/ingestion-gateway/Dockerfile }
     ports: ["${INGESTION_GATEWAY_PORT:-8002}:8000"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -112,22 +118,22 @@ services:
   # ---------------------------------------------------------------------------
   anomaly-detection:
     <<: *service-base
-    build: { context: ../../services/anomaly-detection }
+    build: { context: ../.., dockerfile: services/anomaly-detection/Dockerfile }
     ports: ["${ANOMALY_DETECTION_PORT:-8003}:8000"]
 
   computer-vision:
     <<: *service-base
-    build: { context: ../../services/computer-vision }
+    build: { context: ../.., dockerfile: services/computer-vision/Dockerfile }
     ports: ["${COMPUTER_VISION_PORT:-8004}:8000"]
 
   predictive-risk-engine:
     <<: *service-base
-    build: { context: ../../services/predictive-risk-engine }
+    build: { context: ../.., dockerfile: services/predictive-risk-engine/Dockerfile }
     ports: ["${PREDICTIVE_RISK_ENGINE_PORT:-8005}:8000"]
 
   digital-twin:
     <<: *service-base
-    build: { context: ../../services/digital-twin }
+    build: { context: ../.., dockerfile: services/digital-twin/Dockerfile }
     ports: ["${DIGITAL_TWIN_PORT:-8006}:8000"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -135,24 +141,24 @@ services:
 
   iot-simulator:
     <<: *service-base
-    build: { context: ../../services/iot-simulator }
+    build: { context: ../.., dockerfile: services/iot-simulator/Dockerfile }
     ports: ["${IOT_SIMULATOR_PORT:-8014}:8000"]
 
   knowledge-graph:
     <<: *service-base
-    build: { context: ../../services/knowledge-graph }
+    build: { context: ../.., dockerfile: services/knowledge-graph/Dockerfile }
     ports: ["${KNOWLEDGE_GRAPH_PORT:-8007}:8000"]
     depends_on:
       neo4j: { condition: service_healthy }
 
   rag-service:
     <<: *service-base
-    build: { context: ../../services/rag-service }
+    build: { context: ../.., dockerfile: services/rag-service/Dockerfile }
     ports: ["${RAG_SERVICE_PORT:-8008}:8000"]
 
   agentic-orchestrator:
     <<: *service-base
-    build: { context: ../../services/agentic-orchestrator }
+    build: { context: ../.., dockerfile: services/agentic-orchestrator/Dockerfile }
     ports: ["${AGENTIC_ORCHESTRATOR_PORT:-8009}:8000"]
 
   # ---------------------------------------------------------------------------
@@ -160,22 +166,22 @@ services:
   # ---------------------------------------------------------------------------
   incident-service:
     <<: *service-base
-    build: { context: ../../services/incident-service }
+    build: { context: ../.., dockerfile: services/incident-service/Dockerfile }
     ports: ["${INCIDENT_SERVICE_PORT:-8010}:8000"]
 
   notification-service:
     <<: *service-base
-    build: { context: ../../services/notification-service }
+    build: { context: ../.., dockerfile: services/notification-service/Dockerfile }
     ports: ["${NOTIFICATION_SERVICE_PORT:-8011}:8000"]
 
   identity-rbac:
     <<: *service-base
-    build: { context: ../../services/identity-rbac }
+    build: { context: ../.., dockerfile: services/identity-rbac/Dockerfile }
     ports: ["${IDENTITY_RBAC_PORT:-8012}:8000"]
 
   audit-log:
     <<: *service-base
-    build: { context: ../../services/audit-log }
+    build: { context: ../.., dockerfile: services/audit-log/Dockerfile }
     ports: ["${AUDIT_LOG_PORT:-8013}:8000"]
 
   # ---------------------------------------------------------------------------
@@ -183,14 +189,14 @@ services:
   # ---------------------------------------------------------------------------
   api-gateway:
     <<: *service-base
-    build: { context: ../../services/api-gateway }
+    build: { context: ../.., dockerfile: services/api-gateway/Dockerfile }
     ports: ["${API_GATEWAY_PORT:-8000}:8000"]
     depends_on:
       identity-rbac: { condition: service_started }
 
   realtime-gateway:
     <<: *service-base
-    build: { context: ../../services/realtime-gateway }
+    build: { context: ../.., dockerfile: services/realtime-gateway/Dockerfile }
     ports: ["${REALTIME_GATEWAY_PORT:-8001}:8000"]
 
 networks:

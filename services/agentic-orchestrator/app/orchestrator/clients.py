@@ -10,13 +10,10 @@ do, against the same shared secret and a real seeded user id.
 
 from __future__ import annotations
 
-import time
-
 import asyncpg
 import httpx
-from jose import jwt
 
-_ACTOR_ROLE_NAME = "safety_officer"
+from aegis_api_common import ServiceActorTokenMinter
 
 
 class ServiceClients:
@@ -33,38 +30,14 @@ class ServiceClients:
         # the Emergency Response Orchestrator flow never constructs a client with them set.
         self.predictive_risk_engine_url = predictive_risk_engine_url
         self.knowledge_graph_url = knowledge_graph_url
-        self._jwt_secret = jwt_secret
-        self._jwt_algorithm = jwt_algorithm
-        self._cached_token: str | None = None
-        self._token_expires_at: float = 0.0
-        self._actor_user_id: int | None = None
-
-    async def _get_token(self) -> str:
-        now = time.time()
-        if self._cached_token and now < self._token_expires_at - 30:
-            return self._cached_token
-        conn = await asyncpg.connect(self._postgres_dsn)
-        try:
-            row = await conn.fetchrow(
-                "SELECT u.id, u.default_role_id FROM users u JOIN roles r ON r.id = u.default_role_id WHERE r.name = $1 LIMIT 1",
-                _ACTOR_ROLE_NAME,
-            )
-        finally:
-            await conn.close()
-        self._actor_user_id = row["id"]
-        expires_at = now + 600
-        token = jwt.encode(
-            {"sub": str(row["id"]), "role_id": row["default_role_id"], "type": "access", "exp": int(expires_at)},
-            self._jwt_secret, algorithm=self._jwt_algorithm,
-        )
-        self._cached_token, self._token_expires_at = token, expires_at
-        return token
+        # No direct DB access of its own left (see ServiceActorTokenMinter) -- no pool needed here.
+        self._token_minter = ServiceActorTokenMinter(postgres_dsn=postgres_dsn, jwt_secret=jwt_secret, jwt_algorithm=jwt_algorithm)
 
     async def auth_headers(self) -> dict:
         """Public: other services this orchestrator talks to (e.g.
         predictive-risk-engine's `/fusion/assess`) share the same signing
         secret, so this same minted token authenticates against any of them."""
-        return {"Authorization": f"Bearer {await self._get_token()}"}
+        return await self._token_minter.auth_headers()
 
     # ---- incident-service ----
 

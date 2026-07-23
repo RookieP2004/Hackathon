@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import asyncpg
 
+from aegis_agents.db import acquire
+
 _HAZARD_SYNONYMS: dict[str, str] = {
     "gas leak": "gas_leak", "gas_leak": "gas_leak", "toxic release": "gas_leak", "toxic": "gas_leak",
     "h2s": "gas_leak", "leak": "gas_leak",
@@ -29,12 +31,9 @@ def resolve_hazard_class(text: str) -> str | None:
     return None
 
 
-async def resolve_equipment(postgres_dsn: str, text: str) -> dict | None:
-    conn = await asyncpg.connect(postgres_dsn)
-    try:
+async def resolve_equipment(postgres_dsn: str, text: str, pool: asyncpg.Pool | None = None) -> dict | None:
+    async with acquire(postgres_dsn, pool) as conn:
         rows = await conn.fetch("SELECT id, tag, name, zone_id FROM equipment")
-    finally:
-        await conn.close()
 
     lowered = text.lower()
     candidates = [row for row in rows if row["tag"].lower() in lowered or row["name"].lower() in lowered]

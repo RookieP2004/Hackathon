@@ -12,6 +12,7 @@ import httpx
 import asyncpg
 
 from aegis_agents import BaseAgent
+from aegis_agents.db import acquire
 from aegis_api_common import ServiceActorTokenMinter
 
 _PPE_CLASSES = {"helmet", "vest", "gloves", "mask"}
@@ -22,14 +23,16 @@ class WorkerAgent(BaseAgent):
     failure_mode = "fail_open"
     tick_interval_seconds = 12.0
 
-    def __init__(self, bus, postgres_dsn: str, computer_vision_url: str, *, jwt_secret: str, jwt_algorithm: str) -> None:
-        super().__init__(bus, postgres_dsn)
+    def __init__(
+        self, bus, postgres_dsn: str, computer_vision_url: str, *,
+        jwt_secret: str, jwt_algorithm: str, pg_pool: asyncpg.Pool | None = None,
+    ) -> None:
+        super().__init__(bus, postgres_dsn, pg_pool)
         self._computer_vision_url = computer_vision_url
         self._token_minter = ServiceActorTokenMinter(postgres_dsn=postgres_dsn, jwt_secret=jwt_secret, jwt_algorithm=jwt_algorithm)
 
     async def tick(self) -> None:
-        conn = await asyncpg.connect(self.postgres_dsn)
-        try:
+        async with acquire(self.postgres_dsn, self.pg_pool) as conn:
             zone_occupancy = await conn.fetch(
                 """
                 SELECT z.id AS zone_id, z.name, z.safe_occupancy_limit, count(sa.id) AS current_count
@@ -40,8 +43,6 @@ class WorkerAgent(BaseAgent):
                 GROUP BY z.id, z.name, z.safe_occupancy_limit
                 """
             )
-        finally:
-            await conn.close()
 
         for row in zone_occupancy:
             if row["current_count"] > row["safe_occupancy_limit"]:

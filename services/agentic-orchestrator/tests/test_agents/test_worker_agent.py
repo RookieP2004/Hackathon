@@ -64,7 +64,7 @@ async def _cleanup(assignment_ids: list[int], worker_ids: list[int], employer_id
 async def test_occupancy_threshold_exceeded_flagged(bus):
     assignment_ids, worker_ids, employer_id = await _seed_overcapacity_shift(5)  # 5 > zone 1's limit of 4
     try:
-        agent = WorkerAgent(bus, POSTGRES_DSN, COMPUTER_VISION_URL)
+        agent = WorkerAgent(bus, POSTGRES_DSN, COMPUTER_VISION_URL, jwt_secret="changeme_generate_a_real_secret_before_any_shared_deployment", jwt_algorithm="HS256")
         agent.agent_id = "zztest-worker-agent"
         agent.memory.agent_id = "zztest-worker-agent"
 

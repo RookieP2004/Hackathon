@@ -19,6 +19,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Literal
 
+import asyncpg
 import structlog
 
 from aegis_agents.bus import MessageBus
@@ -37,10 +38,11 @@ class BaseAgent(ABC):
     tick_interval_seconds: float = 10.0
     max_consecutive_failures_before_degraded: int = 3
 
-    def __init__(self, bus: MessageBus, postgres_dsn: str) -> None:
+    def __init__(self, bus: MessageBus, postgres_dsn: str, pg_pool: asyncpg.Pool | None = None) -> None:
         self.bus = bus
         self.postgres_dsn = postgres_dsn
-        self.memory = AgentMemory(postgres_dsn, self.agent_id, self.agent_version)
+        self.pg_pool = pg_pool
+        self.memory = AgentMemory(postgres_dsn, self.agent_id, self.agent_version, pool=pg_pool)
         self.working_memory: dict = {}
         self._task: asyncio.Task | None = None
         self._subscriber_task: asyncio.Task | None = None

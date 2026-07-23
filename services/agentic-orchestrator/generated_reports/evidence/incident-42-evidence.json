@@ -1,0 +1,611 @@
+{
+  "incident_id": 42,
+  "stored_at": "2026-07-23T05:38:40.623452+00:00",
+  "evidence_bundle": {
+    "hazard_class": "explosion",
+    "score": 0.0,
+    "confidence": 0.0,
+    "contributing_factors": [
+      {
+        "evidence_node_id": "fuel_pressure",
+        "source_type": "sensor",
+        "likelihood_ratio": 0.0519,
+        "evidence_refs": [
+          "2"
+        ]
+      },
+      {
+        "evidence_node_id": "ignition_temp",
+        "source_type": "sensor",
+        "likelihood_ratio": 0.0622,
+        "evidence_refs": [
+          "4"
+        ]
+      },
+      {
+        "evidence_node_id": "fuel_gas",
+        "source_type": "sensor",
+        "likelihood_ratio": 0.067,
+        "evidence_refs": [
+          "1"
+        ]
+      },
+      {
+        "evidence_node_id": "confinement_integrity",
+        "source_type": "equipment_health",
+        "likelihood_ratio": 0.0719,
+        "evidence_refs": [
+          "V-12"
+        ]
+      }
+    ],
+    "counterfactuals": [
+      {
+        "removed_node_id": "fuel_in_range",
+        "resulting_probability": 2.5770911468265957e-10,
+        "delta": 2.576947717459327e-10
+      },
+      {
+        "removed_node_id": "ignition_source",
+        "resulting_probability": 1.4403192159884512e-11,
+        "delta": 1.438884922315766e-11
+      },
+      {
+        "removed_node_id": "confinement",
+        "resulting_probability": 6.927836733997617e-12,
+        "delta": 6.913493797270767e-12
+      }
+    ],
+    "recommendations": [
+      "Verify process pressure against the line's design envelope; a rise here alongside gas evidence suggests contained accumulation.",
+      "Inspect for a developing electrical fault or hot surface near the affected equipment.",
+      "Investigate the gas concentration reading and verify containment integrity on the affected line."
+    ]
+  },
+  "sensor_snapshot": {
+    "equipment_id": 2,
+    "captured_at": "2026-07-23T05:38:40.177439+00:00",
+    "sensors": [
+      {
+        "sensor_id": 1,
+        "tag": "GS-14",
+        "sensor_type": "Gas Concentration",
+        "unit": "ppm",
+        "readings": [
+          {
+            "value": 190.78448352469852,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:30.784382+00:00"
+          },
+          {
+            "value": 173.3627656970217,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:02.044540+00:00"
+          },
+          {
+            "value": 178.8774187233343,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:35.333995+00:00"
+          },
+          {
+            "value": 171.50111319901703,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:05.724282+00:00"
+          },
+          {
+            "value": 172.46059659420644,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:39.070633+00:00"
+          },
+          {
+            "value": 192.19661440340877,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:12.386458+00:00"
+          },
+          {
+            "value": 190.73507837858102,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:48.811665+00:00"
+          },
+          {
+            "value": 203.69956217672282,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:21.857567+00:00"
+          },
+          {
+            "value": 193.91343453584918,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:54.322640+00:00"
+          },
+          {
+            "value": 188.29399092963163,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:28.338037+00:00"
+          },
+          {
+            "value": 167.39357550104992,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:55.215385+00:00"
+          },
+          {
+            "value": 179.41563022837067,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:29.815440+00:00"
+          },
+          {
+            "value": 184.19838639786406,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:02.183801+00:00"
+          },
+          {
+            "value": 187.79570193167035,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:38.499143+00:00"
+          },
+          {
+            "value": 195.87250746616905,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:14.546392+00:00"
+          },
+          {
+            "value": 198.059059262074,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:49.157927+00:00"
+          },
+          {
+            "value": 197.6427761809773,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:27.323502+00:00"
+          },
+          {
+            "value": 190.56432645680357,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:03.687289+00:00"
+          },
+          {
+            "value": 191.42117722761427,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:40.328767+00:00"
+          },
+          {
+            "value": 178.21745551235165,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:13.305113+00:00"
+          }
+        ]
+      },
+      {
+        "sensor_id": 2,
+        "tag": "PT-22",
+        "sensor_type": "Pressure",
+        "unit": "psi",
+        "readings": [
+          {
+            "value": 5.9776611390831285,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:30.784382+00:00"
+          },
+          {
+            "value": 6.00779483805169,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:02.044540+00:00"
+          },
+          {
+            "value": 5.937244888005641,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:35.333995+00:00"
+          },
+          {
+            "value": 5.928142252654166,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:05.724282+00:00"
+          },
+          {
+            "value": 5.769677341136408,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:39.070633+00:00"
+          },
+          {
+            "value": 5.889787400796288,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:12.386458+00:00"
+          },
+          {
+            "value": 5.873395833170387,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:48.811665+00:00"
+          },
+          {
+            "value": 5.939461430485154,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:21.857567+00:00"
+          },
+          {
+            "value": 5.822460510404095,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:54.322640+00:00"
+          },
+          {
+            "value": 5.954495708609635,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:28.338037+00:00"
+          },
+          {
+            "value": 5.945165724694533,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:55.215385+00:00"
+          },
+          {
+            "value": 5.912820370634188,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:29.815440+00:00"
+          },
+          {
+            "value": 6.167578425346855,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:02.183801+00:00"
+          },
+          {
+            "value": 6.419032916140367,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:38.499143+00:00"
+          },
+          {
+            "value": 6.586532185579799,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:14.546392+00:00"
+          },
+          {
+            "value": 6.37891262869948,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:49.157927+00:00"
+          },
+          {
+            "value": 6.304792595308331,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:27.323502+00:00"
+          },
+          {
+            "value": 6.224337556392301,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:03.687289+00:00"
+          },
+          {
+            "value": 6.295025290981552,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:40.328767+00:00"
+          },
+          {
+            "value": 6.3095502855173855,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:13.305113+00:00"
+          }
+        ]
+      },
+      {
+        "sensor_id": 4,
+        "tag": "TE-201",
+        "sensor_type": "Temperature",
+        "unit": "celsius",
+        "readings": [
+          {
+            "value": 43.85924077673597,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:30.784382+00:00"
+          },
+          {
+            "value": 42.35696505091634,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:02.044540+00:00"
+          },
+          {
+            "value": 42.5700065778684,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:35.333995+00:00"
+          },
+          {
+            "value": 43.031598666685476,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:05.724282+00:00"
+          },
+          {
+            "value": 41.83036296213474,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:39.070633+00:00"
+          },
+          {
+            "value": 44.57898771601351,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:12.386458+00:00"
+          },
+          {
+            "value": 46.16331507472813,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:48.811665+00:00"
+          },
+          {
+            "value": 45.884175903511675,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:21.857567+00:00"
+          },
+          {
+            "value": 46.74325688015497,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:54.322640+00:00"
+          },
+          {
+            "value": 46.0196917584602,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:28.338037+00:00"
+          },
+          {
+            "value": 45.788061910961275,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:55.215385+00:00"
+          },
+          {
+            "value": 46.308880042318215,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:29.815440+00:00"
+          },
+          {
+            "value": 46.11608616988682,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:02.183801+00:00"
+          },
+          {
+            "value": 45.720459158171856,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:38.499143+00:00"
+          },
+          {
+            "value": 45.20898474454974,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:14.546392+00:00"
+          },
+          {
+            "value": 45.679545525694714,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:49.157927+00:00"
+          },
+          {
+            "value": 45.657532349649436,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:27.323502+00:00"
+          },
+          {
+            "value": 45.81956349002969,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:03.687289+00:00"
+          },
+          {
+            "value": 46.688726406250744,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:40.328767+00:00"
+          },
+          {
+            "value": 46.21001141065722,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:13.305113+00:00"
+          }
+        ]
+      },
+      {
+        "sensor_id": 44,
+        "tag": "AC-241",
+        "sensor_type": "Acoustic",
+        "unit": "dB",
+        "readings": [
+          {
+            "value": 65.85164657002727,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:30.784382+00:00"
+          },
+          {
+            "value": 65.89447571417995,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:02.044540+00:00"
+          },
+          {
+            "value": 65.71746095004474,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:35.333995+00:00"
+          },
+          {
+            "value": 67.0479174879242,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:05.724282+00:00"
+          },
+          {
+            "value": 69.75390389077208,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:39.070633+00:00"
+          },
+          {
+            "value": 67.88818037435642,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:12.386458+00:00"
+          },
+          {
+            "value": 66.11460154208714,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:48.811665+00:00"
+          },
+          {
+            "value": 65.28490707246024,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:21.857567+00:00"
+          },
+          {
+            "value": 65.33500472127841,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:54.322640+00:00"
+          },
+          {
+            "value": 67.18510375387821,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:28.338037+00:00"
+          },
+          {
+            "value": 66.98337400949798,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:55.215385+00:00"
+          },
+          {
+            "value": 66.12561215637963,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:29.815440+00:00"
+          },
+          {
+            "value": 67.2387333638327,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:02.183801+00:00"
+          },
+          {
+            "value": 67.64244164235085,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:38.499143+00:00"
+          },
+          {
+            "value": 68.27755230649612,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:14.546392+00:00"
+          },
+          {
+            "value": 67.53157248180554,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:49.157927+00:00"
+          },
+          {
+            "value": 67.4422224690298,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:27.323502+00:00"
+          },
+          {
+            "value": 68.656959456107,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:03.687289+00:00"
+          },
+          {
+            "value": 68.49380998976913,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:40.328767+00:00"
+          },
+          {
+            "value": 67.83107007078002,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:13.305113+00:00"
+          }
+        ]
+      },
+      {
+        "sensor_id": 84,
+        "tag": "FL-281",
+        "sensor_type": "Flow Rate",
+        "unit": "m3/h",
+        "readings": [
+          {
+            "value": 42.21340483120823,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:30.784382+00:00"
+          },
+          {
+            "value": 42.01186630039544,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:38:02.044540+00:00"
+          },
+          {
+            "value": 42.023181508184145,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:35.333995+00:00"
+          },
+          {
+            "value": 40.67826428700186,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:37:05.724282+00:00"
+          },
+          {
+            "value": 39.25064377722423,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:39.070633+00:00"
+          },
+          {
+            "value": 39.990969134604136,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:36:12.386458+00:00"
+          },
+          {
+            "value": 39.14406850943874,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:48.811665+00:00"
+          },
+          {
+            "value": 37.177243622167495,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:35:21.857567+00:00"
+          },
+          {
+            "value": 35.90105197781383,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:54.322640+00:00"
+          },
+          {
+            "value": 34.678596040288234,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:34:28.338037+00:00"
+          },
+          {
+            "value": 37.15780117746246,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:55.215385+00:00"
+          },
+          {
+            "value": 34.61903757274883,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:29.815440+00:00"
+          },
+          {
+            "value": 37.46786083217873,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:33:02.183801+00:00"
+          },
+          {
+            "value": 39.739182411653445,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:38.499143+00:00"
+          },
+          {
+            "value": 38.40229391857742,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:32:14.546392+00:00"
+          },
+          {
+            "value": 37.23989846959181,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:49.157927+00:00"
+          },
+          {
+            "value": 39.697595204719576,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:27.323502+00:00"
+          },
+          {
+            "value": 40.24237962781173,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:31:03.687289+00:00"
+          },
+          {
+            "value": 40.05943121068526,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:40.328767+00:00"
+          },
+          {
+            "value": 39.57997384159867,
+            "quality": "good",
+            "recorded_at": "2026-07-23T05:30:13.305113+00:00"
+          }
+        ]
+      }
+    ]
+  }
+}
